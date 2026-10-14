@@ -4,14 +4,25 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch:
   schedule:
     - cron: '0 10 * * *' # daily at 6 am Toronto time
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Approve new visual baselines (use after an intended design change)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # Same browser image every run, so screenshots compare pixel-for-pixel
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,8 +30,29 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+
+      - name: Run functional and visual tests
+        env:
+          HOME: /root
+        run: |
+          if [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            npx playwright test --update-snapshots=all
+          else
+            # First run creates any missing baselines; later runs compare against them
+            npx playwright test --update-snapshots=missing
+          fi
+
+      - name: Save new or approved baselines
+        if: success() && github.event_name != 'pull_request'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add tests/visual.spec.ts-snapshots
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -m "Update visual test baselines"
+            git push
+          fi
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

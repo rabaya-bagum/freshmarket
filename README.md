@@ -22,7 +22,7 @@ Demo login: `demo@freshmarket.ca` / `Fresh123`
 
 ## Automated tests
 
-Playwright end-to-end tests cover GP-1 to GP-5 (28 tests, run on desktop Chrome and a Pixel 7 phone size).
+Playwright tests cover GP-1 to GP-5: 28 functional tests and 12 visual tests, each run on desktop Chrome and a Pixel 7 phone size (80 checks).
 
 | File | Story |
 |------|-------|
@@ -31,6 +31,7 @@ Playwright end-to-end tests cover GP-1 to GP-5 (28 tests, run on desktop Chrome 
 | `tests/search.spec.ts` | GP-3 autocomplete, typos, empty results |
 | `tests/product.spec.ts` | GP-4 nutrition, per-kg price, stock states |
 | `tests/cart.spec.ts` | GP-5 count, totals, savings, remove, stock cap |
+| `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in |
 
 Run locally:
 
@@ -40,6 +41,14 @@ npx playwright install chromium
 npm test
 npm run test:report   # open the HTML report
 ```
+
+### Visual tests
+
+Each visual test takes a screenshot and compares it with an approved baseline in `tests/visual.spec.ts-snapshots/`. If the page changes by more than 1% of pixels, the test fails and the HTML report shows the expected, actual and diff images.
+
+- Baselines are created on the first GitHub Actions run and committed automatically.
+- After an intended design change, open **Actions → Playwright tests → Run workflow**, tick **Approve new visual baselines**, and run it.
+- Baselines are made in the official Playwright Docker image, so compare in CI rather than on your own computer (fonts differ between machines).
 
 GitHub Actions runs the suite on every push, every pull request and daily at 6 am. Each run uploads the HTML report as a downloadable artifact.
 

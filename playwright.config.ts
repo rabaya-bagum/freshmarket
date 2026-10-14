@@ -11,7 +11,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'python3 -m http.server 4173',
+    command: 'node serve.mjs',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
