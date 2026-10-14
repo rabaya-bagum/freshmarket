@@ -25,14 +25,16 @@ test.describe('GP-3 Search', () => {
     await expect(items(page).first().locator('b')).toHaveText(/^\$\d+\.\d{2}$/);
   });
 
-  test('tolerates typos', async ({ page }) => {
-    for (const [typo, expected] of [['bananna', 'Bananas'], ['croisant', 'Butter Croissants'], ['salmn', 'Atlantic Salmon Fillet']]) {
+  for (const [typo, expected] of [['bananna', 'Bananas'], ['croisant', 'Butter Croissants'], ['salmn', 'Atlantic Salmon Fillet']]) {
+    test(`tolerates the typo "${typo}"`, async ({ page }) => {
       await page.locator('#q').fill(typo);
       await page.locator('#q').press('Enter');
       await expect(page.locator('#title')).toHaveText(`Results for “${typo}”`);
+      // Must be a real match, not the "popular items" shown on a no-match page
+      await expect(page.locator('.empty')).toHaveCount(0);
       await expect(page.locator('.pname').first()).toHaveText(expected);
-    }
-  });
+    });
+  }
 
   test('keyboard navigation opens the highlighted suggestion', async ({ page }) => {
     await page.locator('#q').fill('sourdough');

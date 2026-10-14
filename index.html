@@ -209,7 +209,7 @@ const save=()=>{try{localStorage.setItem("fm-cart",JSON.stringify(S.cart))}catch
 
 // fuzzy: Levenshtein against each word
 function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){let c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
-function score(p,q){q=q.toLowerCase().trim();if(!q)return 1;const hay=(p.name+" "+p.dept+" "+p.brand+" "+p.tags.join(" ")).toLowerCase();if(hay.includes(q))return 3;const words=hay.split(/[^a-z0-9]+/);let ok=0;for(const t of q.split(/\s+/)){if(words.some(w=>w.startsWith(t)))ok+=2;else if(words.some(w=>{const tol=t.length>6?2:1;return t.length>3&&(false&&lev(t,w.slice(0,t.length))<=tol)}))ok+=1;else return 0}return ok}
+function score(p,q){q=q.toLowerCase().trim();if(!q)return 1;const hay=(p.name+" "+p.dept+" "+p.brand+" "+p.tags.join(" ")).toLowerCase();if(hay.includes(q))return 3;const words=hay.split(/[^a-z0-9]+/);let ok=0;for(const t of q.split(/\s+/)){if(words.some(w=>w.startsWith(t)))ok+=2;else if(words.some(w=>{const tol=t.length>6?2:1;return t.length>3&&(lev(t,w)<=tol||lev(t,w.slice(0,t.length))<=tol)}))ok+=1;else return 0}return ok}
 
 function list(){let r=P.filter(p=>(!S.dept||p.dept===S.dept)&&(S.local?p.local:true)&&(S.sale?!!p.was:true)&&[...S.tags].every(t=>p.tags.includes(t)));
   if(S.q)r=r.map(p=>[p,score(p,S.q)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
