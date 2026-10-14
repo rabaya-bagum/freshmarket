@@ -20,6 +20,29 @@ Open `index.html` in a browser. No build step or server needed.
 
 Demo login: `demo@freshmarket.ca` / `Fresh123`
 
+## Automated tests
+
+Playwright end-to-end tests cover GP-1 to GP-5 (28 tests, run on desktop Chrome and a Pixel 7 phone size).
+
+| File | Story |
+|------|-------|
+| `tests/auth.spec.ts` | GP-1 login, wrong password, lockout, sign-up, reset |
+| `tests/browse.spec.ts` | GP-2 departments, filters, sorting, paging |
+| `tests/search.spec.ts` | GP-3 autocomplete, typos, empty results |
+| `tests/product.spec.ts` | GP-4 nutrition, per-kg price, stock states |
+| `tests/cart.spec.ts` | GP-5 count, totals, savings, remove, stock cap |
+
+Run locally:
+
+```bash
+npm install
+npx playwright install chromium
+npm test
+npm run test:report   # open the HTML report
+```
+
+GitHub Actions runs the suite on every push, every pull request and daily at 6 am. Each run uploads the HTML report as a downloadable artifact.
+
 ## Demo limitations
 
 Sample products and prices only. Login, Google sign-in and the cart run in the browser with no backend; no real orders or payments.
