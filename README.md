@@ -22,7 +22,7 @@ Demo login: `demo@freshmarket.ca` / `Fresh123`
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-5: 28 functional tests and 12 visual tests, each run on desktop Chrome and a Pixel 7 phone size (80 checks).
+Playwright tests cover GP-1 to GP-5: 51 functional tests and 12 visual tests, each run on desktop Chrome and a Pixel 7 phone size (126 checks).
 
 | File | Story |
 |------|-------|
@@ -40,6 +40,7 @@ npm install
 npx playwright install chromium
 npm test
 npm run test:report   # open the HTML report
+npm run lint          # check every test has an assertion
 ```
 
 ### Visual tests

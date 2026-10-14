@@ -31,6 +31,9 @@ jobs:
           cache: npm
       - run: npm ci
 
+      - name: Lint tests (every test must have an assertion)
+        run: npx eslint tests
+
       - name: Create or approve visual baselines
         if: github.event_name != 'pull_request'
         env:

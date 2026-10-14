@@ -19,25 +19,31 @@ test.describe('Visual: storefront', () => {
   test.beforeEach(async ({ page }) => openStable(page));
 
   test('home page', async ({ page }) => {
+    await expect(page.locator('#title')).toHaveText('All departments');
+    await expect(page.locator('article.card')).toHaveCount(12);
     await expect(page).toHaveScreenshot('home.png', shot);
   });
 
   test('home page in dark mode', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 22, 18)');
     await expect(page).toHaveScreenshot('home-dark.png', shot);
   });
 
   test('GP-2 department with filter applied', async ({ page }) => {
     await page.locator('#depts button', { hasText: 'Bakery' }).click();
     await page.locator('.chip', { hasText: 'Vegan' }).click();
+    await expect(page.locator('#subtitle')).toHaveText('3 products');
     await expect(page).toHaveScreenshot('bakery-vegan.png', shot);
   });
 
   test('GP-2 product card with sale badge', async ({ page }) => {
+    await expect(card(page, 'Honeycrisp Apples').locator('.badge')).toHaveText('Save $0.50');
     await expect(card(page, 'Honeycrisp Apples')).toHaveScreenshot('card-sale.png');
   });
 
   test('GP-2 out-of-stock product card', async ({ page }) => {
+    await expect(card(page, 'Strawberries').locator('.oos')).toBeVisible();
     await expect(card(page, 'Strawberries')).toHaveScreenshot('card-out-of-stock.png');
   });
 });
@@ -48,6 +54,7 @@ test.describe('Visual: search', () => {
   test('GP-3 autocomplete dropdown', async ({ page }) => {
     await page.locator('#q').fill('ch');
     await expect(page.locator('#suggest')).toBeVisible();
+    await expect(page.locator('#suggest button').first()).toContainText('Chicken');
     await expect(page).toHaveScreenshot('search-autocomplete.png', shot);
   });
 
@@ -55,6 +62,8 @@ test.describe('Visual: search', () => {
     await page.locator('#q').fill('xyzzy');
     await page.locator('#q').press('Enter');
     await page.locator('#q').blur();
+    await expect(page.locator('.empty h2')).toHaveText('No matches for that search');
+    await expect(page.locator('#suggest')).toBeHidden();
     await expect(page).toHaveScreenshot('search-empty.png', shot);
   });
 });
@@ -64,6 +73,7 @@ test.describe('Visual: product and cart', () => {
 
   test('GP-4 product detail dialog', async ({ page }) => {
     await page.locator('.pname', { hasText: 'Honeycrisp Apples' }).click();
+    await expect(page.getByRole('dialog', { name: 'Honeycrisp Apples' })).toBeVisible();
     await expect(page.locator('.panel')).toHaveScreenshot('product-detail.png');
   });
 
@@ -73,11 +83,14 @@ test.describe('Visual: product and cart', () => {
     await card(page, 'Butter Croissants').getByRole('button', { name: 'Add to cart' }).click();
     await page.locator('#toast').evaluate((el) => (el.hidden = true));
     await page.locator('#cartBtn').click();
+    await expect(page.locator('.drawer .line')).toHaveCount(2);
+    await expect(page.locator('.drawer .grand')).toHaveText('Estimated total$16.84');
     await expect(page.locator('.drawer')).toHaveScreenshot('cart-drawer.png');
   });
 
   test('GP-5 empty cart', async ({ page }) => {
     await page.locator('#cartBtn').click();
+    await expect(page.locator('.drawer .empty h2')).toHaveText('Your cart is empty');
     await expect(page.locator('.drawer')).toHaveScreenshot('cart-empty.png');
   });
 });
@@ -87,6 +100,7 @@ test.describe('Visual: account', () => {
 
   test('GP-1 sign-in dialog', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('tab', { name: 'Sign in' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('.panel')).toHaveScreenshot('sign-in.png');
   });
 
@@ -95,6 +109,7 @@ test.describe('Visual: account', () => {
     await page.getByLabel('Email').fill('demo@freshmarket.ca');
     await page.getByLabel('Password').fill('wrong-pass');
     await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.locator('.err')).toContainText("don't match");
     await expect(page.locator('.panel')).toHaveScreenshot('sign-in-error.png');
   });
 });
