@@ -6,7 +6,7 @@ import { test, expect, DEMO } from './fixtures';
 // with stand-ins, so these tests check our checkout code without the network or a Stripe account.
 test.use({ timezoneId: 'America/Toronto' });
 
-type Outcome = 'succeeded' | 'requires_capture' | 'card_declined' | 'incomplete';
+type Outcome = 'succeeded' | 'requires_capture' | 'card_declined' | 'incomplete' | 'loaderror';
 
 async function fakeStripe(page: Page, outcome: Outcome, opts: { serverAmount?: number; serverError?: string } = {}) {
   const intents: unknown[] = [];
@@ -27,7 +27,7 @@ async function fakeStripe(page: Page, outcome: Outcome, opts: { serverAmount?: n
             elements(o) {
               window.__stripe.elementsOptions = o;
               return {
-                create() { return { mount(el) { el.innerHTML = '<div data-testid="stripe-element">Card details (Stripe)</div>'; } }; },
+                create() { const h = {}; return { on(ev, fn) { h[ev] = fn; }, mount(el) { ${outcome === 'loaderror' ? "setTimeout(() => h.loaderror && h.loaderror({ error: { message: 'Invalid API Key' } }), 0);" : "el.innerHTML = '<div data-testid=\"stripe-element\">Card details (Stripe)</div>';"} } }; },
                 async submit() { return ${outcome === 'incomplete' ? `{ error: { message: 'Your card number is incomplete.' } }` : '{}'}; },
               };
             },
@@ -147,6 +147,34 @@ test.describe('GP-7 Stripe payments', () => {
 
     await co.getByRole('button', { name: /^Place order/ }).click();
     await expect(page.getByRole('dialog', { name: 'Order FM-1001' }).getByRole('heading')).toHaveText('Order FM-1001 confirmed');
+  });
+
+  test('a payment form that fails to load shows a clear message', async ({ store, page }) => {
+    await fakeStripe(page, 'loaderror');
+    await page.reload();
+    await store.signIn(DEMO.email, DEMO.password);
+    await store.department('Pantry');
+    await store.addToCart('Extra Virgin Olive Oil');
+    for (let i = 0; i < 2; i++) await store.card('Extra Virgin Olive Oil').getByRole('button', { name: 'Increase' }).click();
+    const drawer = await store.openCart();
+    await drawer.getByRole('button', { name: 'Continue to checkout' }).click();
+    const co = page.getByRole('dialog', { name: 'Checkout' });
+    await co.getByRole('button', { name: 'Curbside pickup' }).click();
+    await co.getByRole('group', { name: 'Time' }).getByRole('button', { name: '10 am – 11 am' }).click();
+    await co.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(co.locator('#pay-loaderr')).toHaveText('The payment form could not load. Refresh the page and try again.');
+    await co.getByRole('button', { name: /^Place order/ }).click();
+    await expect(co.locator('#co-err')).toHaveText('The payment form is still loading. Try again in a moment.');
+  });
+
+  test('bad Stripe keys keep the demo checkout working', async ({ store, page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-14T08:00:00-04:00'));
+    await page.route('**/api/config', (r) => r.fulfill({ json: { stripe: false, setupProblem: 'STRIPE_PUBLISHABLE_KEY is not a full Stripe publishable key.' } }));
+    const warnings: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
+    await page.reload();
+    await expect(store.title).toHaveText('All departments');
+    await expect.poll(() => warnings.join(' ')).toContain('Stripe is off. STRIPE_PUBLISHABLE_KEY is not a full Stripe publishable key.');
   });
 
   test('falls back to demo payment when Stripe is not set up', async ({ store, page }) => {

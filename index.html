@@ -429,7 +429,7 @@ const STATUS={delivery:["Placed","Picking","Out for delivery","Completed"],picku
 let coOpen=false,coAnim=false;
 // ---- online payments (Stripe). Without server keys the checkout stays in demo mode.
 let PAY={stripe:false},stripeJs=null,stripeEls=null;
-fetch("/api/config").then(r=>r.ok?r.json():null).then(j=>{if(j&&j.stripe)PAY=j}).catch(()=>{});
+fetch("/api/config").then(r=>r.ok?r.json():null).then(j=>{if(j&&j.stripe)PAY=j;else if(j&&j.setupProblem)console.warn("FreshMarket: Stripe is off. "+j.setupProblem)}).catch(()=>{});
 function loadStripe(){if(stripeJs)return stripeJs;stripeJs=new Promise((ok,fail)=>{if(window.Stripe)return ok(window.Stripe(PAY.publishableKey));
   const sc=document.createElement("script");sc.src="https://js.stripe.com/v3/";sc.onload=()=>ok(window.Stripe(PAY.publishableKey));sc.onerror=()=>{stripeJs=null;fail(new Error("Stripe could not load"))};document.head.appendChild(sc)});return stripeJs}
 const chargeCents=t=>Math.round((t.weighted?r2(t.total*1.1):r2(t.total))*100);
@@ -437,7 +437,7 @@ async function mountStripe(t){const box=$("pay-el");if(!box)return;
   try{const stripe=await loadStripe(),css=getComputedStyle(document.documentElement);
     stripeEls=stripe.elements({mode:"payment",amount:chargeCents(t),currency:"cad",captureMethod:t.weighted?"manual":"automatic",
       appearance:{theme:"stripe",variables:{colorPrimary:css.getPropertyValue("--leaf").trim(),colorText:css.getPropertyValue("--ink").trim(),colorBackground:css.getPropertyValue("--surface").trim(),borderRadius:"9px"}}});
-    if($("pay-el")===box){stripeEls.create("payment",{layout:"tabs"}).mount(box)}}
+    if($("pay-el")===box){const pe=stripeEls.create("payment",{layout:"tabs"});pe.on("loaderror",()=>{stripeEls=null;box.innerHTML=`<p class="err" id="pay-loaderr">The payment form could not load. Refresh the page and try again.</p>`});pe.mount(box)}}
   catch(e){box.innerHTML=`<p class="err">The payment form could not load. Check your connection and try again.</p>`}}
 function showPayError(msg){const c=CO();c.err=msg;let el=$("co-err");
   if(!el){el=document.createElement("p");el.className="err";el.id="co-err";el.setAttribute("role","alert");$("pay-el").after(el)}el.textContent=msg}

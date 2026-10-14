@@ -170,23 +170,55 @@ describe('POST /api/create-payment-intent', () => {
 });
 
 describe('GET /api/config', () => {
+  const PK = 'pk_test_' + 'A1b2C3d4'.repeat(12); // full-length test keys
+  const SK = 'sk_test_' + 'Z9y8X7w6'.repeat(12);
+  const run = () => { const res = mockRes(); config({}, res); return res; };
+
   test('reports Stripe off when keys are missing', () => {
     delete process.env.STRIPE_PUBLISHABLE_KEY; delete process.env.STRIPE_SECRET_KEY;
-    const res = mockRes(); config({}, res);
-    assert.deepEqual(res.body, { stripe: false });
+    assert.deepEqual(run().body, { stripe: false });
   });
 
   test('shares only the publishable key, never the secret key', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_abc'; process.env.STRIPE_SECRET_KEY = 'sk_test_secret';
-    const res = mockRes(); config({}, res);
-    assert.deepEqual(res.body, { stripe: true, publishableKey: 'pk_test_abc', testMode: true });
+    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK;
+    const res = run();
+    assert.deepEqual(res.body, { stripe: true, publishableKey: PK, testMode: true });
     assert.ok(!JSON.stringify(res.body).includes('sk_test'));
     assert.equal(res.headers['Cache-Control'], 'no-store');
   });
 
+  test('ignores spaces around pasted keys', () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = `  ${PK}\n`; process.env.STRIPE_SECRET_KEY = ` ${SK} `;
+    assert.equal(run().body.publishableKey, PK);
+  });
+
   test('stays off if only the publishable key is set', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_abc'; delete process.env.STRIPE_SECRET_KEY;
-    const res = mockRes(); config({}, res);
-    assert.deepEqual(res.body, { stripe: false });
+    process.env.STRIPE_PUBLISHABLE_KEY = PK; delete process.env.STRIPE_SECRET_KEY;
+    const body = run().body;
+    assert.equal(body.stripe, false);
+    assert.match(body.setupProblem, /STRIPE_SECRET_KEY is not a full Stripe secret key/);
+  });
+
+  test('rejects the shortened key text copied from the dashboard', () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_...JD7i'; process.env.STRIPE_SECRET_KEY = 'sk_test_...JN0I';
+    const body = run().body;
+    assert.equal(body.stripe, false);
+    assert.match(body.setupProblem, /STRIPE_PUBLISHABLE_KEY is not a full Stripe publishable key/);
+    assert.ok(!('publishableKey' in body));
+  });
+
+  test('rejects a shortened secret key even when the publishable key is fine', () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = 'sk_test_…JN0I';
+    assert.match(run().body.setupProblem, /STRIPE_SECRET_KEY/);
+  });
+
+  test('rejects mixing test and live keys', () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK.replace('sk_test_', 'sk_live_');
+    assert.match(run().body.setupProblem, /different modes/);
+  });
+
+  test('accepts a restricted secret key', () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK.replace('sk_', 'rk_');
+    assert.equal(run().body.stripe, true);
   });
 });

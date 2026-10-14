@@ -2,7 +2,9 @@
 
 Demo storefront for FreshMarket, a fresh-food grocery platform. Tracked in Jira project **GP**.
 
-Live demo: https://claude.ai/artifact/Vubfe2xakH4KaGGF5Q8yyG
+Live site (Stripe test mode): https://freshmarket-gules.vercel.app
+
+Claude demo (demo payments only): https://claude.ai/artifact/Vubfe2xakH4KaGGF5Q8yyG
 
 ## What's in this version
 
@@ -49,6 +51,8 @@ The browser only sends product IDs and quantities. The server works out the amou
 6. See test payments in Stripe under **Payments**.
 
 Never put the secret key in code, in the README, or in a chat. It belongs only in Vercel's environment variables.
+
+**Copy the whole key.** The Stripe dashboard shows keys shortened, like `pk_test_...JD7i`. That text is not the key. Use the copy button on **Developers → API keys** so you get the full value (about 100 characters). If a key is shortened or the two keys are from different modes, `/api/config` turns Stripe off, the checkout stays in demo mode, and the browser console says which key is wrong. After changing a key in Vercel, redeploy for it to take effect.
 
 ## Run it
 
