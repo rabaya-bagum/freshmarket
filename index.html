@@ -118,6 +118,49 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 .note{font-size:12px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60}
 .demo{background:var(--sale);color:var(--sale-ink);text-align:center;font-size:12px;font-weight:700;padding:5px 16px;letter-spacing:.02em}
+.co{width:min(720px,100%)}
+.co .steps{padding-right:36px}
+.panel.still{animation:none}
+.store label{display:inline;font-size:13px;font-weight:400}
+.steps,.track{list-style:none;display:flex;gap:6px;padding:0;margin:0 0 14px;flex-wrap:wrap;counter-reset:st}
+.steps li,.track li{counter-increment:st;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.steps li::before,.track li::before{content:counter(st);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);font-size:12px}
+.steps li+li::after,.track li+li::after{content:none}
+.steps li.cur,.track li.cur{color:var(--ink)}
+.steps li.cur::before,.track li.cur::before{border-color:var(--leaf);background:var(--leaf);color:var(--leaf-ink)}
+.steps li.done::before,.track li.done::before{content:"✓";border-color:var(--leaf);color:var(--leaf)}
+.track{background:var(--bg);border-radius:10px;padding:10px 12px;gap:14px}
+.co h2{margin-bottom:12px}.co h3{font-family:var(--display);font-size:17px;margin:18px 0 8px}
+.seg{display:flex;gap:6px;background:var(--bg);padding:4px;border-radius:10px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;padding:9px;border-radius:8px;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12);color:var(--leaf)}
+.addr{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end}
+@media (max-width:560px){.addr{grid-template-columns:1fr 1fr}.addr label:first-child{grid-column:1/-1}}
+.pick{background:var(--bg);border-radius:10px;padding:12px;margin:0}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.days button,.slots button{border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 10px;font-weight:600;font-size:13px;white-space:nowrap}
+.days button[aria-pressed="true"],.slots button[aria-pressed="true"]{border-color:var(--leaf);background:var(--leaf-soft);color:var(--leaf)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:8px}
+.slots button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+.slots small{display:block;font-size:11px;text-decoration:none}
+.cofoot{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px}
+.cofoot .checkout{margin:0;padding:12px 18px}
+.review{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;margin-bottom:14px}
+.review>div:first-child{display:grid;gap:2px}
+.lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.items{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14px}
+.items li,.orders li{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.co-totals{padding:8px 0 0;border-top:1px solid var(--line)}
+.pm{border:0;padding:0;margin:0 0 6px;display:flex;gap:14px;flex-wrap:wrap}
+.pm legend{font-size:13px;font-weight:600;margin-bottom:6px}
+.radio{display:flex;flex-direction:row;align-items:center;gap:6px;font-weight:500;font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.orders{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.orders li{border:1px solid var(--line);border-radius:10px;padding:10px 12px;align-items:center;flex-wrap:wrap}
+.orders li>div:first-child{display:grid}
+.oact{display:flex;gap:6px}.oact .ghost{padding:6px 10px;font-size:13px}
+.pill{font-size:12px;font-weight:700;background:var(--leaf-soft);color:var(--leaf);padding:2px 10px;border-radius:99px}
+#storeSel{border:1.5px solid var(--line);border-radius:8px;background:var(--surface);padding:2px 6px;font-weight:700;max-width:100%}
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .22s ease-out}.panel{animation:pop .18s ease-out}}
 @keyframes slide{from{transform:translateX(30px);opacity:.6}}
 @keyframes pop{from{transform:scale(.97);opacity:.6}}
@@ -135,7 +178,7 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
       <button class="ghost" id="acct">Sign in</button>
       <button class="cartbtn" id="cartBtn">Cart <span class="count" id="count">0</span></button>
     </div>
-    <div class="store">Shopping at <b>FreshMarket Mississauga · Square One</b> · Open until 10 pm</div>
+    <div class="store"><label for="storeSel">Shopping at</label> <select id="storeSel" aria-label="Choose your store"></select> · <span id="storeHours">Open until 10 pm</span></div>
     <nav class="depts" id="depts" aria-label="Departments"></nav>
   </div>
 </header>
@@ -198,11 +241,36 @@ const P=[
 ["Chicken Caesar Salad","Prepared Meals","🥗","300 g",8.49,null,null,7,[],0,76,0,"FreshMarket Kitchen","Ontario","Romaine, grilled chicken, parmesan and croutons.",{cal:430,fat:"28 g",carb:"18 g",prot:"27 g",sod:"890 mg"},"Wheat, Milk, Egg, Fish"],
 ["Margherita Pizza","Prepared Meals","🍕","12 inch, take and bake",10.99,null,null,10,[],0,84,1,"FreshMarket Kitchen","Ontario","Hand-stretched dough, tomato, mozzarella and basil.",{cal:270,fat:"10 g",carb:"33 g",prot:"12 g",sod:"560 mg"},"Wheat, Milk"],
 ["Veggie Sushi Box","Prepared Meals","🍱","12 pieces",11.49,null,null,0,["vegan"],0,57,1,"Sushi Fresh","Ontario","Avocado, cucumber and sweet potato rolls.",{cal:390,fat:"9 g",carb:"68 g",prot:"8 g",sod:"620 mg"},"Soy, Sesame"],
+["Blueberries","Produce","🫐","pint (551 mL)",4.99,5.99,null,36,["vegan","gluten-free"],0,48,0,"Berry Hill","USA","Plump, sweet blueberries. Rinse just before eating.",{cal:85,fat:"0.5 g",carb:"21 g",prot:"1.1 g",sod:"1 mg"},"None"],
+["Broccoli Crowns","Produce","🥦","per lb",2.99,null,"lb",28,["vegan","gluten-free"],1,45,0,"Holland Marsh","Ontario","Tight green florets, trimmed stems.",{cal:31,fat:"0.3 g",carb:"6 g",prot:"2.5 g",sod:"30 mg"},"None"],
+["Yellow Onions","Produce","🧅","3 lb bag",2.99,null,null,55,["vegan","gluten-free"],1,44,0,"Holland Marsh","Ontario","Kitchen staple for soups, stews and sautés.",{cal:44,fat:"0.1 g",carb:"10 g",prot:"1.2 g",sod:"4 mg"},"None"],
+["Red Grapes","Produce","🍇","per lb",3.49,null,"lb",22,["vegan","gluten-free"],0,42,0,"FreshMarket","Chile","Seedless and crisp.",{cal:104,fat:"0.2 g",carb:"27 g",prot:"1.1 g",sod:"3 mg"},"None"],
+["Organic Kale","Produce","🌿","bunch",3.49,null,null,19,["organic","vegan","gluten-free"],1,30,1,"Earth Leaf","Ontario","Curly kale, grown without synthetic pesticides.",{cal:33,fat:"0.6 g",carb:"6 g",prot:"2.9 g",sod:"25 mg"},"None"],
+["Pork Tenderloin","Meat & Seafood","🐖","per lb (approx. 1.2 lb)",5.99,null,"lb",16,["gluten-free"],1,40,0,"Ontario Pork","Ontario","Lean and tender. Great roasted or grilled.",{cal:143,fat:"3.5 g",carb:"0 g",prot:"26 g",sod:"57 mg"},"None"],
+["Cod Fillets","Meat & Seafood","🐠","450 g, skinless",12.49,null,null,11,["gluten-free"],0,35,1,"Ocean Catch","Newfoundland","Mild, flaky white fish.",{cal:90,fat:"0.7 g",carb:"0 g",prot:"20 g",sod:"70 mg"},"Fish"],
+["Prosciutto","Deli","🥓","per 100 g, sliced to order",4.49,null,"100 g",24,["gluten-free"],0,38,0,"FreshMarket Deli","Italy","Dry-cured, aged 18 months.",{cal:250,fat:"16 g",carb:"0 g",prot:"26 g",sod:"1900 mg"},"None"],
+["Fresh Mozzarella","Deli","⚪","200 g ball",4.99,null,null,20,["gluten-free"],0,36,0,"Ontario Dairy Co.","Ontario","Soft and milky. Perfect for caprese.",{cal:85,fat:"6 g",carb:"1 g",prot:"6 g",sod:"180 mg"},"Milk"],
+["Cottage Cheese","Dairy & Eggs","🥣","500 g, 2%",4.29,null,null,30,["gluten-free"],1,34,0,"Dairyland","Ontario","Small curd, high protein.",{cal:90,fat:"2.5 g",carb:"4 g",prot:"12 g",sod:"390 mg"},"Milk"],
+["Whipping Cream","Dairy & Eggs","🍦","473 mL, 35%",3.99,null,null,25,["gluten-free"],1,32,0,"Dairyland","Ontario","Whips up thick and stable.",{cal:50,fat:"5 g",carb:"0 g",prot:"0 g",sod:"5 mg"},"Milk"],
+["Canned Chickpeas","Pantry","🥫","540 mL",1.49,null,null,90,["vegan","gluten-free"],0,33,0,"Unico","Canada","Ready to use. Rinse and drain.",{cal:120,fat:"2 g",carb:"20 g",prot:"6 g",sod:"290 mg"},"None"],
+["Dark Chocolate Bar","Pantry","🍫","100 g, 70% cacao",3.99,4.49,null,48,["vegan","gluten-free"],0,46,0,"Camino","Canada","Fair-trade organic dark chocolate.",{cal:220,fat:"16 g",carb:"16 g",prot:"3 g",sod:"5 mg"},"May contain milk"],
+["Wildflower Honey","Pantry","🍯","500 g",9.99,null,null,14,["gluten-free"],1,31,0,"Ontario Bee Co.","Ontario","Raw, unpasteurized honey.",{cal:60,fat:"0 g",carb:"17 g",prot:"0 g",sod:"0 mg"},"None"],
+["Rolled Oats","Pantry","🌾","1 kg",4.49,null,null,40,["vegan"],0,39,0,"Quaker","Canada","Large flake, cooks in 5 minutes.",{cal:150,fat:"3 g",carb:"27 g",prot:"5 g",sod:"0 mg"},"May contain wheat"],
+["Red Lentil Soup","Prepared Meals","🍲","500 mL",6.99,null,null,13,["vegan","gluten-free"],1,37,1,"FreshMarket Kitchen","Ontario","Red lentils, cumin and lemon. Heat and serve.",{cal:260,fat:"6 g",carb:"38 g",prot:"14 g",sod:"720 mg"},"None"],
+["Beef Lasagna","Prepared Meals","🍝","1 kg, serves 4",13.49,null,null,8,[],1,43,0,"FreshMarket Kitchen","Ontario","Layered with ricotta and slow-cooked beef ragù.",{cal:410,fat:"19 g",carb:"35 g",prot:"24 g",sod:"880 mg"},"Wheat, Milk, Egg"],
 ].map((r,i)=>({id:i+1,name:r[0],dept:r[1],emoji:r[2],size:r[3],price:r[4],was:r[5],per:r[6],stock:r[7],tags:r[8],local:!!r[9],pop:r[10],isNew:!!r[11],brand:r[12],origin:r[13],desc:r[14],nf:r[15],allergens:r[16]}));
 
-const S={dept:null,q:"",sort:"pop",tags:new Set(),local:false,shown:12,cart:{},user:null,users:{"demo@freshmarket.ca":{pw:"Fresh123",name:"Demo Shopper",verified:true,fails:0}}};
+const STORES=[
+ {name:"Square One",city:"Mississauga",addr:"100 City Centre Dr, Mississauga, ON L5B 2C9",close:"10 pm",areas:["L4Z","L5A","L5B","L5C","L5M","L5R"]},
+ {name:"Oakville Place",city:"Oakville",addr:"240 Leighland Ave, Oakville, ON L6H 3H6",close:"9 pm",areas:["L6H","L6J","L6K","L6L","L6M"]},
+ {name:"Liberty Village",city:"Toronto",addr:"85 Hanna Ave, Toronto, ON M6K 3S3",close:"11 pm",areas:["M5A","M5V","M6J","M6K"]}];
+const S={store:0,dept:null,q:"",sort:"pop",tags:new Set(),local:false,shown:12,cart:{},user:null,users:{"demo@freshmarket.ca":{pw:"Fresh123",name:"Demo Shopper",verified:true,fails:0}}};
+try{const st=+localStorage.getItem("fm-store");if(st>=0&&st<STORES.length)S.store=st}catch(e){}
 try{const c=JSON.parse(localStorage.getItem("fm-cart")||"{}");if(c&&typeof c==="object")S.cart=c}catch(e){}
 const $=id=>document.getElementById(id);
+const store=()=>STORES[S.store];
+// Stock differs by store. Square One uses the base figure.
+function stockOf(p){if(S.store===0)return p.stock;if(S.store===1)return p.stock===0?24:(p.id%7===0?0:Math.max(2,Math.round(p.stock*0.6)));return p.stock===0?12:(p.id%9===4?2:p.stock+6)}
 const money=n=>"$"+n.toFixed(2);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const save=()=>{try{localStorage.setItem("fm-cart",JSON.stringify(S.cart))}catch(e){}};
@@ -217,7 +285,7 @@ function list(){let r=P.filter(p=>(!S.dept||p.dept===S.dept)&&(S.local?p.local:t
   if(!S.q||S.sort!=="pop")r=[...r].sort(f);return r}
 
 function qtyCtl(p,cls=""){const n=S.cart[p.id]||0;
-  if(p.stock===0)return `<div class="oos">Out of stock at this store</div>`;
+  if(stockOf(p)===0)return `<div class="oos">Out of stock at this store</div>`;
   if(!n)return `<button class="add ${cls}" data-add="${p.id}">Add to cart</button>`;
   return `<div class="qty ${cls}"><button data-dec="${p.id}" aria-label="Decrease">−</button><span>${n}</span><button data-inc="${p.id}" aria-label="Increase">+</button></div>`}
 
@@ -230,6 +298,10 @@ function card(p){return `<article class="card">
  <div class="price"><b>${money(p.price)}${p.per?`<span class="unit"> /${p.per}</span>`:""}</b>${p.was?`<s>${money(p.was)}</s>`:""}</div>
  ${qtyCtl(p)}</article>`}
 
+function renderStore(){$("storeSel").innerHTML=STORES.map((x,i)=>`<option value="${i}"${i===S.store?" selected":""}>FreshMarket ${x.city} · ${x.name}</option>`).join("");$("storeHours").textContent=`Open until ${store().close}`}
+function setStore(i){S.store=i;try{localStorage.setItem("fm-store",String(i))}catch(e){}
+  let changed=0;for(const [id,q] of Object.entries(S.cart)){const p=P.find(x=>x.id==id),max=stockOf(p);if(q>max){changed++;if(max)S.cart[id]=max;else delete S.cart[id]}}
+  save();renderStore();render();toast(changed?`Switched to ${store().name}. ${changed} cart item${changed===1?"":"s"} adjusted to match stock.`:`Switched to ${store().name}`)}
 function render(){
   $("depts").innerHTML=[`<button data-dept="" aria-pressed="${!S.dept}">All</button>`,...DEPTS.map(d=>`<button data-dept="${d}" aria-pressed="${S.dept===d}">${d}</button>`)].join("");
   const tags=["organic","gluten-free","vegan"];
@@ -245,7 +317,7 @@ function render(){
   if(drawerOpen)renderCart();if(openProduct)renderProduct(openProduct);
 }
 
-function setQty(id,n){const p=P.find(x=>x.id==id);n=Math.max(0,Math.min(n,p.stock));if(n)S.cart[id]=n;else delete S.cart[id];save();render()}
+function setQty(id,n){const p=P.find(x=>x.id==id);n=Math.max(0,Math.min(n,stockOf(p)));if(n)S.cart[id]=n;else delete S.cart[id];save();render()}
 function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
 
 // ---- cart drawer
@@ -257,7 +329,7 @@ function renderCart(){
   $("layer").innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-label="Your cart">
    <div class="dhead"><h2>Your cart</h2><button class="x" data-close aria-label="Close cart">×</button></div>
    <div class="lines">${items.length?items.map(({p,q})=>`<div class="line"><div class="mini" style="background:${TINT[p.dept]}">${p.emoji}</div>
-     <div style="min-width:0"><div style="font-weight:600">${esc(p.name)}</div><div class="size">${esc(p.size)}</div>${q>p.stock?`<div class="err">Only ${p.stock} left</div>`:""}
+     <div style="min-width:0"><div style="font-weight:600">${esc(p.name)}</div><div class="size">${esc(p.size)}</div>${q>stockOf(p)?`<div class="err">Only ${stockOf(p)} left</div>`:""}
      <div class="qty"><button data-dec="${p.id}" aria-label="Decrease">−</button><span>${q}</span><button data-inc="${p.id}" aria-label="Increase">+</button></div></div>
      <div style="text-align:right"><b style="font-variant-numeric:tabular-nums">${money(p.price*q)}</b><br><button class="rm" data-rm="${p.id}">Remove</button></div></div>`).join("")
      :`<div class="empty"><h2>Your cart is empty</h2><p>Add something fresh to get started.</p></div>`}</div>
@@ -273,7 +345,8 @@ function renderCart(){
 
 // ---- product dialog
 function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
-  const st=p.stock===0?["out","Out of stock at Square One"]:p.stock<5?["low",`Only ${p.stock} left at Square One`]:["ok","In stock at Square One"];
+  const sk=stockOf(p),sn=store().name;
+  const st=sk===0?["out",`Out of stock at ${sn}`]:sk<5?["low",`Only ${sk} left at ${sn}`]:["ok",`In stock at ${sn}`];
   $("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel" role="dialog" aria-label="${esc(p.name)}">
    <button class="x" data-close aria-label="Close">×</button>
    <div class="pd"><div class="thumb" style="background:${TINT[p.dept]}">${p.emoji}</div>
@@ -284,7 +357,7 @@ function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
     <div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
     <p style="margin:6px 0">${esc(p.desc)}</p>
     <div class="stock ${st[0]}">${st[1]}</div>
-    ${p.per==="lb"&&p.stock?`<div class="note" style="margin-top:8px">Sold by weight. You'll be charged for the actual weight picked.</div>`:""}
+    ${p.per==="lb"&&stockOf(p)?`<div class="note" style="margin-top:8px">Sold by weight. You'll be charged for the actual weight picked.</div>`:""}
     <div class="buyrow">${qtyCtl(p)}</div>
     <div class="nf"><h3>Nutrition Facts</h3><div><span>Calories</span><b>${p.nf.cal}</b></div><div><span>Fat</span><span>${p.nf.fat}</span></div><div><span>Carbohydrate</span><span>${p.nf.carb}</span></div><div><span>Protein</span><span>${p.nf.prot}</span></div><div><span>Sodium</span><span>${p.nf.sod}</span></div></div>
     <div class="allergen"><b>Contains:</b> ${esc(p.allergens)}</div>
@@ -294,7 +367,7 @@ function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
 let authMode="in",authMsg="";
 function renderAuth(){
   if(S.user){$("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-label="Account"><button class="x" data-close aria-label="Close">×</button>
-   <h2>Hi, ${esc(S.user.name)}</h2><p class="sub">${esc(S.user.email)}</p><p>Your cart is saved to your account.</p><button class="ghost" data-logout>Sign out</button></div></div>`;return}
+   <h2>Hi, ${esc(S.user.name)}</h2><p class="sub">${esc(S.user.email)}</p><p>Your cart is saved to your account.</p><div class="cofoot" style="justify-content:flex-start"><button class="ghost" data-orders>Your orders${S.orders?.length?` (${S.orders.length})`:""}</button><button class="ghost" data-logout>Sign out</button></div></div></div>`;return}
   const t=(m,l)=>`<button role="tab" data-mode="${m}" aria-selected="${authMode===m}">${l}</button>`;
   let body="";
   if(authMode==="in")body=`<form data-form="in"><label>Email<input id="em" type="email" required autocomplete="email"></label><label>Password<input id="pw" type="password" required autocomplete="current-password"></label>
@@ -309,9 +382,9 @@ function renderAuth(){
    ${authMode!=="reset"?`<button class="google" data-google style="width:100%;margin-top:12px">Continue with Google</button>`:""}
    <p class="note">Demo account: demo@freshmarket.ca / Fresh123</p></div></div>`}
 
-function signIn(u,email){S.user={...u,email};authMsg="";closeLayer();toast(`Signed in. Your cart is saved.`);render()}
+function signIn(u,email){S.user={...u,email};S.orders=loadOrders();authMsg="";closeLayer();toast(`Signed in. Your cart is saved.`);render()}
 
-function closeLayer(){$("layer").innerHTML="";drawerOpen=false;openProduct=null}
+function closeLayer(){$("layer").innerHTML="";drawerOpen=false;openProduct=null;coOpen=false}
 
 document.addEventListener("click",e=>{const t=e.target.closest("button,[data-close]");if(!t)return;const d=t.dataset;
   if(d.close!==undefined&&(e.target===t||t.tagName==="BUTTON")){closeLayer();return}
@@ -326,8 +399,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-clo
   if(d.open){renderProduct(d.open);return}
   if(d.mode){authMode=d.mode;authMsg="";renderAuth();return}
   if(d.google!==undefined){signIn({name:"Google Shopper"},"shopper@gmail.com");return}
-  if(d.logout!==undefined){S.user=null;closeLayer();toast("Signed out");render();return}
-  if(d.checkout!==undefined){if(!S.user){authMode="in";authMsg=`<p class="note">Sign in to continue to checkout.</p>`;drawerOpen=false;renderAuth()}else toast("Checkout and time slots arrive in the next sprint (GP-6, GP-7)");return}
+  if(d.logout!==undefined){S.user=null;S.orders=[];closeLayer();toast("Signed out");render();return}
+  if(d.checkout!==undefined){if(!S.user){authMode="in";authMsg=`<p class="note">Sign in to continue to checkout.</p>`;drawerOpen=false;renderAuth()}else openCheckout();return}
 });
 $("home").onclick=()=>{S.dept=null;S.q="";$("q").value="";S.tags.clear();S.local=false;render()};
 $("more").onclick=()=>{S.shown+=12;render()};
@@ -336,7 +409,7 @@ $("cartBtn").onclick=()=>{drawerOpen=true;openProduct=null;renderCart()};
 $("acct").onclick=()=>{authMsg="";renderAuth()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLayer()});
 
-document.addEventListener("submit",e=>{e.preventDefault();const f=e.target.dataset.form,em=($("em")?.value||"").trim().toLowerCase(),pw=$("pw")?.value||"";
+document.addEventListener("submit",e=>{e.preventDefault();if(e.target.dataset.form==="pay"){placeOrder();return}const f=e.target.dataset.form,em=($("em")?.value||"").trim().toLowerCase(),pw=$("pw")?.value||"";
   if(f==="in"){const u=S.users[em];
     if(u&&u.fails>=5){authMsg=`<p class="err">This account is locked after 5 failed attempts. Reset your password to unlock it.</p>`;return renderAuth()}
     if(!u||u.pw!==pw){if(u)u.fails++;const left=u?5-u.fails:null;authMsg=`<p class="err">That email and password don't match.${u&&left>0?` ${left} attempt${left===1?"":"s"} left before the account locks.`:""}</p>`;return renderAuth()}
@@ -346,6 +419,135 @@ document.addEventListener("submit",e=>{e.preventDefault();const f=e.target.datas
     if(!/\d/.test(pw)){authMsg=`<p class="err">Add at least one number to your password.</p>`;return renderAuth()}
     S.users[em]={pw,name:$("nm").value.trim(),verified:false,fails:0};authMode="in";authMsg=`<p class="okmsg">Account created. We sent a verification link to ${esc(em)}. (Demo: sign in twice to simulate verifying.)</p>`;renderAuth()}
   if(f==="reset"){const u=S.users[em];if(u)u.fails=0;authMode="in";authMsg=`<p class="okmsg">If an account exists for ${esc(em)}, a reset link is on its way.</p>`;renderAuth()}
+});
+
+// ---- checkout (GP-6 time slots, GP-7 payment, GP-8 confirmation, tracking, history)
+const DELIVERY_MIN=35,FREE_DELIVERY=50,DELIVERY_FEE=4.99,HOLD_MIN=30;
+const STATUS={delivery:["Placed","Picking","Out for delivery","Completed"],pickup:["Placed","Picking","Ready for pickup","Completed"]};
+let coOpen=false,coAnim=false;
+const CO=()=>S.co||(S.co={step:"fulfil",mode:"delivery",street:"",postal:"",zipOk:false,zipMsg:"",day:0,slot:null,held:null,pay:"card",card:{name:"",num:"",exp:"",cvc:""},err:""});
+const cartItems=()=>Object.entries(S.cart).map(([id,q])=>({p:P.find(x=>x.id==id),q})).filter(x=>x.p);
+function calc(mode){const items=cartItems();const sub=items.reduce((a,x)=>a+x.p.price*x.q,0),saved=items.reduce((a,x)=>a+(x.p.was?(x.p.was-x.p.price)*x.q:0),0);
+  const hst=sub*0.13*0.25,fee=mode==="pickup"||!sub||sub>=FREE_DELIVERY?0:DELIVERY_FEE,total=sub+hst+fee;
+  return{items,sub,saved,hst,fee,total,weighted:items.some(x=>x.p.per)}}
+const r2=n=>Math.round(n*100)/100;
+const dayStart=i=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate()+i)};
+const fmtDay=d=>d.toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"});
+const hh=h=>(h%12||12)+(h<12?" am":" pm");
+const fmtTime=d=>d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}).toLowerCase();
+function slotsFor(day){const now=new Date(),d=dayStart(day),out=[];
+  for(let h=10;h<20;h++){const start=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h);
+    if(start-now<2*3600e3)continue; // needs 2 hours to pick
+    out.push({h,start,full:(d.getDate()*3+h*7+S.store)%5===0})}return out}
+const slotLabel=(day,h)=>`${fmtDay(dayStart(day))}, ${hh(h)} – ${hh(h+1)}`;
+const orderKey=()=>"fm-orders-"+(S.user?.email||"guest");
+function loadOrders(){try{return JSON.parse(localStorage.getItem(orderKey())||"[]")}catch(e){return[]}}
+function saveOrders(o){try{localStorage.setItem(orderKey(),JSON.stringify(o))}catch(e){}S.orders=o}
+function nextOrderNo(){let n=1001;try{n=+(localStorage.getItem("fm-order-seq")||1001)}catch(e){}try{localStorage.setItem("fm-order-seq",String(n+1))}catch(e){}return"FM-"+n}
+
+function openCheckout(){S.co=null;CO();coOpen=true;coAnim=true;drawerOpen=false;openProduct=null;renderCheckout()}
+function coShell(inner,label){const a=coAnim;coAnim=false;return`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel co${a?"":" still"}" role="dialog" aria-label="${label}"><button class="x" data-close aria-label="Close">×</button>${inner}</div></div>`}
+function steps(cur){const names=["Delivery or pickup","Payment","Confirmed"];return`<ol class="steps">${names.map((n,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"${i===cur?' aria-current="step"':""}>${n}</li>`).join("")}</ol>`}
+
+function renderCheckout(){const c=CO(),t=calc(c.mode);
+  if(c.step==="fulfil"){
+    const dayBtns=[0,1,2,3,4,5,6].map(i=>`<button type="button" data-day="${i}" aria-pressed="${c.day===i}">${i===0?"Today":fmtDay(dayStart(i))}</button>`).join("");
+    const sl=slotsFor(c.day);
+    const slotBtns=sl.length?sl.map(x=>`<button type="button" data-slot="${x.h}" ${x.full?"disabled":""} aria-pressed="${c.slot===x.h}">${hh(x.h)} – ${hh(x.h+1)}${x.full?'<small>Full</small>':""}</button>`).join(""):`<p class="note">No times left today. Choose another day.</p>`;
+    const min=c.mode==="delivery"&&t.sub<DELIVERY_MIN;
+    $("layer").innerHTML=coShell(`${steps(0)}<h2>How would you like your order?</h2>
+     <div class="seg" role="group" aria-label="Delivery or pickup"><button type="button" data-fm="delivery" aria-pressed="${c.mode==="delivery"}">Home delivery</button><button type="button" data-fm="pickup" aria-pressed="${c.mode==="pickup"}">Curbside pickup</button></div>
+     ${c.mode==="delivery"?`<div class="addr"><label>Street address<input id="co-street" autocomplete="street-address" value="${esc(c.street)}"></label>
+       <label>Postal code<input id="co-postal" autocomplete="postal-code" maxlength="7" value="${esc(c.postal)}"></label><button type="button" class="ghost" data-co="zip">Check</button></div>
+       ${c.zipMsg}<p class="note">Delivered from ${esc(store().name)} · ${money(DELIVERY_FEE)} fee, free over ${money(FREE_DELIVERY)} · minimum order ${money(DELIVERY_MIN)}</p>
+       ${min?`<p class="err" id="co-min">Delivery needs a minimum order of ${money(DELIVERY_MIN)}. Add ${money(DELIVERY_MIN-t.sub)} more or choose pickup.</p>`:""}`
+     :`<p class="pick"><b>FreshMarket ${esc(store().name)}</b><br>${esc(store().addr)}<br><span class="note">Park in a pickup bay and tap “I'm here” in your confirmation email. Free.</span></p>`}
+     <h3>Choose a time</h3><div class="days" role="group" aria-label="Day">${dayBtns}</div><div class="slots" role="group" aria-label="Time">${slotBtns}</div>
+     ${c.slot!==null&&c.held?`<p class="okmsg" id="co-hold">We're holding ${esc(slotLabel(c.day,c.slot))} for you until ${fmtTime(new Date(c.held))}.</p>`:""}
+     ${c.err?`<p class="err" id="co-err">${c.err}</p>`:""}
+     <div class="cofoot"><span>Estimated total <b>${money(t.total)}</b></span><button class="checkout" type="button" data-co="next">Continue to payment</button></div>`,"Checkout");
+    return}
+  if(c.step==="pay"){
+    const where=c.mode==="delivery"?`${esc(c.street)}, ${esc(c.postal.toUpperCase())}`:`FreshMarket ${esc(store().name)}, ${esc(store().addr)}`;
+    const auth=r2(t.total*1.1);
+    $("layer").innerHTML=coShell(`${steps(1)}<h2>Review and pay</h2>
+     <div class="review"><div><span class="lbl">${c.mode==="delivery"?"Delivery":"Pickup"}</span><b id="co-when">${esc(slotLabel(c.day,c.slot))}</b><span id="co-where">${where}</span><button type="button" class="link" data-co="back">Change</button></div>
+     <ul class="items">${t.items.map(({p,q})=>`<li><span>${p.emoji} ${esc(p.name)} × ${q}</span><span>${money(p.price*q)}</span></li>`).join("")}</ul>
+     <div class="totals co-totals"><div><span>Subtotal</span><span>${money(t.sub)}</span></div>${t.saved?`<div class="save"><span>You save</span><span>−${money(t.saved)}</span></div>`:""}
+     <div><span>Est. HST</span><span>${money(t.hst)}</span></div><div><span>${c.mode==="delivery"?"Delivery fee":"Pickup"}</span><span>${t.fee?money(t.fee):"Free"}</span></div>
+     <div class="grand"><span>Total</span><span>${money(t.total)}</span></div></div>
+     ${t.weighted?`<p class="note" id="co-preauth">Some items are sold by weight. We'll pre-authorize ${money(auth)} and charge the actual amount when your order is picked.</p>`:""}</div>
+     <form data-form="pay" novalidate><fieldset class="pm"><legend>Payment method</legend>
+      ${[["card","Credit or debit card"],["apple","Apple Pay"],["google","Google Pay"]].map(([v,l])=>`<label class="radio"><input type="radio" name="pm" value="${v}" ${c.pay===v?"checked":""} data-pay="${v}"> ${l}</label>`).join("")}</fieldset>
+      ${c.pay==="card"?`<label>Name on card<input id="cc-name" autocomplete="cc-name" value="${esc(c.card.name)}"></label>
+      <label>Card number<input id="cc-num" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" value="${esc(c.card.num)}"></label>
+      <div class="two"><label>Expiry (MM/YY)<input id="cc-exp" autocomplete="cc-exp" placeholder="MM/YY" value="${esc(c.card.exp)}"></label><label>Security code<input id="cc-cvc" inputmode="numeric" autocomplete="cc-csc" maxlength="4" value="${esc(c.card.cvc)}"></label></div>
+      <p class="note">Demo: use 4242 4242 4242 4242 to approve, 4000 0000 0000 0002 to see a decline. Any future expiry and any 3 digits.</p>`
+      :`<p class="note">You'll confirm the payment in ${c.pay==="apple"?"Apple Pay":"Google Pay"}.</p>`}
+      ${c.err?`<p class="err" id="co-err" role="alert">${c.err}</p>`:""}
+      <div class="cofoot"><button type="button" class="ghost" data-co="back">Back</button><button class="checkout" type="submit">Place order · ${money(t.total)}</button></div></form>`,"Checkout");
+    return}
+}
+
+function renderOrder(o,fresh){const flow=STATUS[o.mode];coOpen=true;
+  $("layer").innerHTML=coShell(`${fresh?steps(2):""}<h2>${fresh?`Order ${o.id} confirmed`:`Order ${o.id}`}</h2>
+   ${fresh?`<p class="okmsg">We emailed a confirmation to ${esc(o.email)}.</p>`:`<p class="sub">Placed ${esc(new Date(o.created).toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"}))}</p>`}
+   <ol class="track" aria-label="Order status">${flow.map((n,i)=>`<li class="${i<o.status?"done":i===o.status?"cur":""}"${i===o.status?' aria-current="step"':""}>${n}</li>`).join("")}</ol>
+   <div class="review"><div><span class="lbl">${o.mode==="delivery"?"Delivery":"Pickup"}</span><b>${esc(o.when)}</b><span>${esc(o.where)}</span></div>
+   <ul class="items">${o.items.map(x=>`<li><span>${x.emoji} ${esc(x.name)} × ${x.q}</span><span>${money(x.price*x.q)}</span></li>`).join("")}</ul>
+   <div class="totals co-totals"><div><span>Subtotal</span><span>${money(o.sub)}</span></div>${o.saved?`<div class="save"><span>You save</span><span>−${money(o.saved)}</span></div>`:""}<div><span>HST</span><span>${money(o.hst)}</span></div>
+   <div><span>${o.mode==="delivery"?"Delivery fee":"Pickup"}</span><span>${o.fee?money(o.fee):"Free"}</span></div><div class="grand"><span>Total</span><span>${money(o.total)}</span></div></div>
+   <p class="note">Paid with ${esc(o.paidWith)}.</p></div>
+   <div class="cofoot">${o.status<flow.length-1?`<button type="button" class="ghost" data-advance="${o.id}">Advance status (demo)</button>`:""}<button type="button" class="ghost" data-orders>All orders</button><button type="button" class="checkout" data-close>Continue shopping</button></div>`,"Order "+o.id)}
+
+function renderOrders(){const os=S.orders||[];coOpen=true;
+  $("layer").innerHTML=coShell(`<h2>Your orders</h2>${os.length?`<ul class="orders">${os.map(o=>`<li><div><b>${o.id}</b><span class="note">${esc(new Date(o.created).toLocaleDateString("en-CA",{month:"short",day:"numeric"}))} · ${o.items.reduce((a,x)=>a+x.q,0)} items · ${money(o.total)}</span></div>
+     <span class="pill">${STATUS[o.mode][o.status]}</span><div class="oact"><button type="button" class="ghost" data-order="${o.id}">View receipt</button><button type="button" class="ghost" data-reorder="${o.id}">Reorder</button></div></li>`).join("")}</ul>`
+    :`<div class="empty"><h2>No orders yet</h2><p>Your past orders and receipts will appear here.</p></div>`}`,"Your orders")}
+
+function coValidateFulfil(){const c=CO(),t=calc(c.mode);
+  if(c.mode==="delivery"){if(!c.street.trim())return"Enter your street address.";if(!c.zipOk)return"Check your postal code for delivery.";if(t.sub<DELIVERY_MIN)return`Delivery needs a minimum order of ${money(DELIVERY_MIN)}.`}
+  if(c.slot===null)return"Choose a delivery or pickup time.";return""}
+function checkZip(){const c=CO(),v=c.postal.trim().toUpperCase().replace(/\s+/,"");
+  if(!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(v)){c.zipOk=false;c.zipMsg=`<p class="err" id="co-zip">Enter a postal code like L5B 2C9.</p>`;return}
+  c.postal=v.slice(0,3)+" "+v.slice(3);
+  if(store().areas.includes(v.slice(0,3))){c.zipOk=true;c.zipMsg=`<p class="okmsg" id="co-zip">We deliver to ${c.postal}.</p>`}
+  else{c.zipOk=false;c.zipMsg=`<p class="err" id="co-zip">We don't deliver to ${c.postal} from ${esc(store().name)} yet. Choose pickup or another store.</p>`}}
+function luhn(n){let s=0,alt=false;for(let i=n.length-1;i>=0;i--){let d=+n[i];if(alt){d*=2;if(d>9)d-=9}s+=d;alt=!alt}return s%10===0}
+function readCard(){const c=CO();if(c.pay!=="card")return;for(const [k,id] of [["name","cc-name"],["num","cc-num"],["exp","cc-exp"],["cvc","cc-cvc"]])c.card[k]=$(id)?.value||""}
+function cardError(){const c=CO().card,num=c.num.replace(/\s|-/g,"");
+  if(!c.name.trim())return"Enter the name on the card.";
+  if(!/^\d{13,19}$/.test(num)||!luhn(num))return"Check the card number. It should be 13 to 19 digits.";
+  const m=c.exp.match(/^(\d{2})\s*\/\s*(\d{2})$/);if(!m||+m[1]<1||+m[1]>12)return"Enter the expiry as MM/YY.";
+  const now=new Date(),endOfMonth=new Date(2000+ +m[2],+m[1],1);if(endOfMonth<=now)return"This card has expired. Use another card.";
+  if(!/^\d{3,4}$/.test(c.cvc))return"Enter the 3 or 4 digit security code.";
+  if(num==="4000000000000002")return"Your card was declined. Try another card or payment method.";return""}
+function placeOrder(){const c=CO();readCard();
+  if(c.held&&Date.now()>c.held){c.step="fulfil";c.slot=null;c.held=null;c.err="Your time slot hold expired. Choose a time again.";renderCheckout();return}
+  if(c.pay==="card"){const e=cardError();if(e){c.err=e;renderCheckout();return}}
+  const t=calc(c.mode),num=c.card.num.replace(/\s|-/g,"");
+  const o={id:nextOrderNo(),created:new Date().toISOString(),email:S.user.email,mode:c.mode,when:slotLabel(c.day,c.slot),
+    where:c.mode==="delivery"?`${c.street}, ${c.postal}`:`FreshMarket ${store().name}, ${store().addr}`,
+    items:t.items.map(({p,q})=>({id:p.id,name:p.name,emoji:p.emoji,q,price:p.price})),sub:r2(t.sub),saved:r2(t.saved),hst:r2(t.hst),fee:t.fee,total:r2(t.total),status:0,
+    paidWith:c.pay==="card"?`card ending in ${num.slice(-4)}`:c.pay==="apple"?"Apple Pay":"Google Pay"};
+  saveOrders([o,...(S.orders||[])]);S.cart={};save();S.co=null;render();renderOrder(o,true)}
+
+document.addEventListener("click",e=>{const t=e.target.closest("button,input[data-pay]");if(!t)return;const d=t.dataset,c=CO();
+  const keep=()=>{if($("co-street"))c.street=$("co-street").value;if($("co-postal"))c.postal=$("co-postal").value;readCard()};
+  if(d.fm){keep();c.mode=d.fm;c.err="";renderCheckout()}
+  else if(d.co==="zip"){keep();checkZip();c.err="";renderCheckout()}
+  else if(d.day!==undefined){keep();c.day=+d.day;c.slot=null;c.held=null;renderCheckout()}
+  else if(d.slot!==undefined){keep();c.slot=+d.slot;c.held=Date.now()+HOLD_MIN*60e3;c.err="";renderCheckout()}
+  else if(d.co==="next"){keep();if(c.mode==="delivery"&&!c.zipOk&&c.postal.trim())checkZip();const err=coValidateFulfil();c.err=err;if(!err)c.step="pay";renderCheckout()}
+  else if(d.co==="back"){keep();c.step="fulfil";c.err="";renderCheckout()}
+  else if(d.pay){keep();c.pay=d.pay;c.err="";renderCheckout()}
+  else if(d.advance){const os=S.orders.map(o=>o.id===d.advance?{...o,status:Math.min(o.status+1,STATUS[o.mode].length-1)}:o);saveOrders(os);const o=os.find(x=>x.id===d.advance);
+    toast(`Status update sent by email and SMS: ${STATUS[o.mode][o.status]}`);renderOrder(o,false)}
+  else if(d.orders!==undefined)renderOrders();
+  else if(d.order)renderOrder(S.orders.find(o=>o.id===d.order),false);
+  else if(d.reorder){const o=S.orders.find(x=>x.id===d.reorder);let added=0,skipped=0;
+    for(const x of o.items){const p=P.find(y=>y.id===x.id),room=stockOf(p)-(S.cart[p.id]||0),n=Math.min(x.q,Math.max(0,room));if(n>0){S.cart[p.id]=(S.cart[p.id]||0)+n;added+=n}if(n<x.q)skipped++}
+    save();closeLayer();render();toast(`Added ${added} item${added===1?"":"s"} to your cart${skipped?`. ${skipped} item${skipped===1?" is":"s are"} out of stock`:""}.`)}
 });
 
 // ---- search autocomplete
@@ -361,6 +563,8 @@ $("q").addEventListener("keydown",e=>{const items=[...$("suggest").querySelector
   else if(e.key==="Enter"){if(sel>=0&&items[sel]){renderProduct(items[sel].dataset.s)}else{S.q=$("q").value.trim();S.dept=null;S.shown=12;render()}$("suggest").hidden=true}});
 $("suggest").addEventListener("mousedown",e=>{const b=e.target.closest("[data-s]");if(b){e.preventDefault();$("suggest").hidden=true;renderProduct(b.dataset.s)}});
 $("q").addEventListener("blur",()=>setTimeout(()=>$("suggest").hidden=true,100));
+renderStore();
+$("storeSel").onchange=e=>setStore(+e.target.value);
 render();
 </script>
 </body></html>

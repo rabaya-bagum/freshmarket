@@ -113,3 +113,64 @@ test.describe('Visual: account', () => {
     await expect(page.locator('.panel')).toHaveScreenshot('sign-in-error.png');
   });
 });
+
+test.describe('Visual: checkout', () => {
+  test.use({ timezoneId: 'America/Toronto' });
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-14T08:00:00-04:00'));
+    await openStable(page);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.getByLabel('Email').fill('demo@freshmarket.ca');
+    await page.getByLabel('Password').fill('Fresh123');
+    await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
+    await page.locator('#toast').evaluate((el) => (el.hidden = true));
+    await page.locator('#depts button', { hasText: 'Pantry' }).click();
+    const oil = card(page, 'Extra Virgin Olive Oil');
+    await oil.getByRole('button', { name: 'Add to cart' }).click();
+    await oil.getByRole('button', { name: 'Increase' }).click();
+    await oil.getByRole('button', { name: 'Increase' }).click();
+    await page.locator('#toast').evaluate((el) => (el.hidden = true));
+    await page.locator('#cartBtn').click();
+    await page.getByRole('button', { name: 'Continue to checkout' }).click();
+    const co = page.getByRole('dialog', { name: 'Checkout' });
+    await co.getByLabel('Street address').fill('100 City Centre Dr');
+    await co.getByLabel('Postal code').fill('L5B 2C9');
+    await co.getByRole('button', { name: 'Check' }).click();
+    await co.getByRole('group', { name: 'Time' }).getByRole('button', { name: '10 am – 11 am' }).click();
+  });
+
+  test('GP-6 delivery and time slot step', async ({ page }) => {
+    await expect(page.locator('#co-hold')).toContainText('until 8:30 am');
+    await expect(page.locator('#co-zip')).toHaveText('We deliver to L5B 2C9.');
+    await expect(page.locator('.panel')).toHaveScreenshot('checkout-slots.png');
+  });
+
+  test('GP-7 review and pay step', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByRole('heading', { name: 'Review and pay' })).toBeVisible();
+    await expect(page.locator('.panel .grand')).toHaveText('Total$48.32');
+    await expect(page.locator('.panel')).toHaveScreenshot('checkout-pay.png');
+  });
+
+  test('GP-7 declined card error', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await page.getByLabel('Name on card').fill('Demo Shopper');
+    await page.getByLabel('Card number').fill('4000 0000 0000 0002');
+    await page.getByLabel('Expiry (MM/YY)').fill('12/30');
+    await page.getByLabel('Security code').fill('123');
+    await page.getByRole('button', { name: /^Place order/ }).click();
+    await expect(page.locator('#co-err')).toContainText('declined');
+    await expect(page.locator('.panel')).toHaveScreenshot('checkout-declined.png');
+  });
+
+  test('GP-8 order confirmation', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await page.getByLabel('Name on card').fill('Demo Shopper');
+    await page.getByLabel('Card number').fill('4242 4242 4242 4242');
+    await page.getByLabel('Expiry (MM/YY)').fill('12/30');
+    await page.getByLabel('Security code').fill('123');
+    await page.getByRole('button', { name: /^Place order/ }).click();
+    await expect(page.getByRole('heading', { name: 'Order FM-1001 confirmed' })).toBeVisible();
+    await expect(page.locator('.panel')).toHaveScreenshot('order-confirmed.png');
+  });
+});

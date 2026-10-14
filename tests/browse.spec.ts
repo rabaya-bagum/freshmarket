@@ -14,7 +14,7 @@ test.describe('GP-2 Browse catalog', () => {
     await expect(depts).toHaveText(['All', 'Produce', 'Meat & Seafood', 'Bakery', 'Deli', 'Dairy & Eggs', 'Pantry', 'Prepared Meals']);
     await expect(depts.first()).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#title')).toHaveText('All departments');
-    await expect(page.locator('#subtitle')).toHaveText('33 products');
+    await expect(page.locator('#subtitle')).toHaveText('50 products');
   });
 
   test('filters products by department', async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe('GP-2 Browse catalog', () => {
 
   test('Ontario grown filter shows only local products', async ({ page }) => {
     await page.locator('.chip', { hasText: 'Ontario grown' }).click();
-    await expect(page.locator('#subtitle')).toHaveText('12 products');
+    await expect(page.locator('#subtitle')).toHaveText('21 products');
     const labels = await page.locator('article.card .local').allTextContents();
     expect(labels.length).toBeGreaterThan(0);
     expect(labels.every((l) => l === 'Ontario grown')).toBe(true);
@@ -73,10 +73,11 @@ test.describe('GP-2 Browse catalog', () => {
 
   test('On sale filter shows only discounted products', async ({ page }) => {
     await page.locator('.chip', { hasText: 'On sale this week' }).click();
-    await expect(page.locator('#subtitle')).toHaveText('12 products');
-    await expect(cards(page)).toHaveCount(12);
-    await expect(page.locator('article.card .badge')).toHaveCount(12);
-    await expect(page.locator('article.card .price s')).toHaveCount(12);
+    await expect(page.locator('#subtitle')).toHaveText('14 products');
+    await page.getByRole('button', { name: 'Show more products' }).click();
+    await expect(cards(page)).toHaveCount(14);
+    await expect(page.locator('article.card .badge')).toHaveCount(14);
+    await expect(page.locator('article.card .price s')).toHaveCount(14);
   });
 
   test('sorts by price, low to high', async ({ page }) => {
@@ -97,8 +98,10 @@ test.describe('GP-2 Browse catalog', () => {
     await expect(cards(page)).toHaveCount(12);
     await page.getByRole('button', { name: 'Show more products' }).click();
     await expect(cards(page)).toHaveCount(24);
-    await page.getByRole('button', { name: 'Show more products' }).click();
-    await expect(cards(page)).toHaveCount(33);
+    for (const n of [36, 48, 50]) {
+      await page.getByRole('button', { name: 'Show more products' }).click();
+      await expect(cards(page)).toHaveCount(n);
+    }
     await expect(page.getByRole('button', { name: 'Show more products' })).toBeHidden();
 
     const names = await page.locator('.pname').allTextContents();

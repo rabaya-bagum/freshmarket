@@ -54,10 +54,11 @@ test.describe('GP-3 Search', () => {
   test('search results support the same sort and filters', async ({ page }) => {
     await page.locator('#q').fill('chicken');
     await page.locator('#q').press('Enter');
-    await expect(page.locator('#subtitle')).toHaveText('3 products');
+    // Exact matches rank above the close spelling match "Canned Chickpeas"
+    await expect(page.locator('.pname')).toHaveText(['Chicken Breasts', 'Butter Chicken & Rice', 'Chicken Caesar Salad', 'Canned Chickpeas']);
 
     await page.locator('#sort').selectOption('low');
-    await expect(page.locator('.pname')).toHaveText(['Chicken Breasts', 'Chicken Caesar Salad', 'Butter Chicken & Rice']);
+    await expect(page.locator('.pname')).toHaveText(['Canned Chickpeas', 'Chicken Breasts', 'Chicken Caesar Salad', 'Butter Chicken & Rice']);
 
     await page.locator('.chip', { hasText: 'Ontario grown' }).click();
     await expect(page.locator('.pname')).toHaveText(['Chicken Breasts']);
