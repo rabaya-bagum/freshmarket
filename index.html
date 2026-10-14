@@ -119,6 +119,7 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60}
 .demo{background:var(--sale);color:var(--sale-ink);text-align:center;font-size:12px;font-weight:700;padding:5px 16px;letter-spacing:.02em}
 .co{width:min(720px,100%)}
+.payel{min-height:120px;margin:4px 0 10px}
 .co .steps{padding-right:36px}
 .panel.still{animation:none}
 .store label{display:inline;font-size:13px;font-weight:400}
@@ -259,6 +260,7 @@ const P=[
 ["Red Lentil Soup","Prepared Meals","🍲","500 mL",6.99,null,null,13,["vegan","gluten-free"],1,37,1,"FreshMarket Kitchen","Ontario","Red lentils, cumin and lemon. Heat and serve.",{cal:260,fat:"6 g",carb:"38 g",prot:"14 g",sod:"720 mg"},"None"],
 ["Beef Lasagna","Prepared Meals","🍝","1 kg, serves 4",13.49,null,null,8,[],1,43,0,"FreshMarket Kitchen","Ontario","Layered with ricotta and slow-cooked beef ragù.",{cal:410,fat:"19 g",carb:"35 g",prot:"24 g",sod:"880 mg"},"Wheat, Milk, Egg"],
 ].map((r,i)=>({id:i+1,name:r[0],dept:r[1],emoji:r[2],size:r[3],price:r[4],was:r[5],per:r[6],stock:r[7],tags:r[8],local:!!r[9],pop:r[10],isNew:!!r[11],brand:r[12],origin:r[13],desc:r[14],nf:r[15],allergens:r[16]}));
+window.FM_PRODUCTS=P;
 
 const STORES=[
  {name:"Square One",city:"Mississauga",addr:"100 City Centre Dr, Mississauga, ON L5B 2C9",close:"10 pm",areas:["L4Z","L5A","L5B","L5C","L5M","L5R"]},
@@ -425,6 +427,35 @@ document.addEventListener("submit",e=>{e.preventDefault();if(e.target.dataset.fo
 const DELIVERY_MIN=35,FREE_DELIVERY=50,DELIVERY_FEE=4.99,HOLD_MIN=30;
 const STATUS={delivery:["Placed","Picking","Out for delivery","Completed"],pickup:["Placed","Picking","Ready for pickup","Completed"]};
 let coOpen=false,coAnim=false;
+// ---- online payments (Stripe). Without server keys the checkout stays in demo mode.
+let PAY={stripe:false},stripeJs=null,stripeEls=null;
+fetch("/api/config").then(r=>r.ok?r.json():null).then(j=>{if(j&&j.stripe)PAY=j}).catch(()=>{});
+function loadStripe(){if(stripeJs)return stripeJs;stripeJs=new Promise((ok,fail)=>{if(window.Stripe)return ok(window.Stripe(PAY.publishableKey));
+  const sc=document.createElement("script");sc.src="https://js.stripe.com/v3/";sc.onload=()=>ok(window.Stripe(PAY.publishableKey));sc.onerror=()=>{stripeJs=null;fail(new Error("Stripe could not load"))};document.head.appendChild(sc)});return stripeJs}
+const chargeCents=t=>Math.round((t.weighted?r2(t.total*1.1):r2(t.total))*100);
+async function mountStripe(t){const box=$("pay-el");if(!box)return;
+  try{const stripe=await loadStripe(),css=getComputedStyle(document.documentElement);
+    stripeEls=stripe.elements({mode:"payment",amount:chargeCents(t),currency:"cad",captureMethod:t.weighted?"manual":"automatic",
+      appearance:{theme:"stripe",variables:{colorPrimary:css.getPropertyValue("--leaf").trim(),colorText:css.getPropertyValue("--ink").trim(),colorBackground:css.getPropertyValue("--surface").trim(),borderRadius:"9px"}}});
+    if($("pay-el")===box){stripeEls.create("payment",{layout:"tabs"}).mount(box)}}
+  catch(e){box.innerHTML=`<p class="err">The payment form could not load. Check your connection and try again.</p>`}}
+function showPayError(msg){const c=CO();c.err=msg;let el=$("co-err");
+  if(!el){el=document.createElement("p");el.className="err";el.id="co-err";el.setAttribute("role","alert");$("pay-el").after(el)}el.textContent=msg}
+async function stripePay(){const c=CO(),t=calc(c.mode),btn=document.querySelector('[data-form="pay"] button[type="submit"]');
+  if(!stripeEls){showPayError("The payment form is still loading. Try again in a moment.");return}
+  const label=btn.textContent;btn.disabled=true;btn.textContent="Processing…";
+  const fail=msg=>{btn.disabled=false;btn.textContent=label;showPayError(msg)};
+  try{const stripe=await loadStripe();
+    const sub=await stripeEls.submit();if(sub.error)return fail(sub.error.message);
+    const r=await fetch("/api/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({mode:c.mode,items:t.items.map(({p,q})=>({id:p.id,q}))})});
+    const j=await r.json().catch(()=>({}));if(!r.ok)return fail(j.error||"Payment could not start. Try again.");
+    if(j.amountCents!==chargeCents(t))return fail("Prices changed while you were checking out. Go back and review your order.");
+    const res=await stripe.confirmPayment({elements:stripeEls,clientSecret:j.clientSecret,redirect:"if_required",confirmParams:{return_url:location.href.split("#")[0]}});
+    if(res.error)return fail(res.error.message||"Your payment was not approved. Try another payment method.");
+    const pi=res.paymentIntent;if(!pi||!["succeeded","requires_capture","processing"].includes(pi.status))return fail("Your payment was not approved. Try another payment method.");
+    finishOrder(PAY.testMode?"Stripe (test mode)":"Stripe",pi.id)}
+  catch(e){fail("Something went wrong with the payment. You have not been charged. Try again.")}}
 const CO=()=>S.co||(S.co={step:"fulfil",mode:"delivery",street:"",postal:"",zipOk:false,zipMsg:"",day:0,slot:null,held:null,pay:"card",card:{name:"",num:"",exp:"",cvc:""},err:""});
 const cartItems=()=>Object.entries(S.cart).map(([id,q])=>({p:P.find(x=>x.id==id),q})).filter(x=>x.p);
 function calc(mode){const items=cartItems();const sub=items.reduce((a,x)=>a+x.p.price*x.q,0),saved=items.reduce((a,x)=>a+(x.p.was?(x.p.was-x.p.price)*x.q:0),0);
@@ -477,15 +508,17 @@ function renderCheckout(){const c=CO(),t=calc(c.mode);
      <div><span>Est. HST</span><span>${money(t.hst)}</span></div><div><span>${c.mode==="delivery"?"Delivery fee":"Pickup"}</span><span>${t.fee?money(t.fee):"Free"}</span></div>
      <div class="grand"><span>Total</span><span>${money(t.total)}</span></div></div>
      ${t.weighted?`<p class="note" id="co-preauth">Some items are sold by weight. We'll pre-authorize ${money(auth)} and charge the actual amount when your order is picked.</p>`:""}</div>
-     <form data-form="pay" novalidate><fieldset class="pm"><legend>Payment method</legend>
+     <form data-form="pay" novalidate>${PAY.stripe?`<div id="pay-el" class="payel" aria-label="Payment details"><p class="note">Loading secure payment form…</p></div>
+      ${PAY.testMode?`<p class="note">Stripe test mode: use 4242 4242 4242 4242, any future expiry and any 3 digits. No real money is charged.</p>`:""}`:`<fieldset class="pm"><legend>Payment method</legend>
       ${[["card","Credit or debit card"],["apple","Apple Pay"],["google","Google Pay"]].map(([v,l])=>`<label class="radio"><input type="radio" name="pm" value="${v}" ${c.pay===v?"checked":""} data-pay="${v}"> ${l}</label>`).join("")}</fieldset>
       ${c.pay==="card"?`<label>Name on card<input id="cc-name" autocomplete="cc-name" value="${esc(c.card.name)}"></label>
       <label>Card number<input id="cc-num" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" value="${esc(c.card.num)}"></label>
       <div class="two"><label>Expiry (MM/YY)<input id="cc-exp" autocomplete="cc-exp" placeholder="MM/YY" value="${esc(c.card.exp)}"></label><label>Security code<input id="cc-cvc" inputmode="numeric" autocomplete="cc-csc" maxlength="4" value="${esc(c.card.cvc)}"></label></div>
       <p class="note">Demo: use 4242 4242 4242 4242 to approve, 4000 0000 0000 0002 to see a decline. Any future expiry and any 3 digits.</p>`
-      :`<p class="note">You'll confirm the payment in ${c.pay==="apple"?"Apple Pay":"Google Pay"}.</p>`}
+      :`<p class="note">You'll confirm the payment in ${c.pay==="apple"?"Apple Pay":"Google Pay"}.</p>`}`}
       ${c.err?`<p class="err" id="co-err" role="alert">${c.err}</p>`:""}
       <div class="cofoot"><button type="button" class="ghost" data-co="back">Back</button><button class="checkout" type="submit">Place order · ${money(t.total)}</button></div></form>`,"Checkout");
+    if(PAY.stripe)mountStripe(t);
     return}
 }
 
@@ -524,12 +557,15 @@ function cardError(){const c=CO().card,num=c.num.replace(/\s|-/g,"");
   if(num==="4000000000000002")return"Your card was declined. Try another card or payment method.";return""}
 function placeOrder(){const c=CO();readCard();
   if(c.held&&Date.now()>c.held){c.step="fulfil";c.slot=null;c.held=null;c.err="Your time slot hold expired. Choose a time again.";renderCheckout();return}
+  if(PAY.stripe){stripePay();return}
   if(c.pay==="card"){const e=cardError();if(e){c.err=e;renderCheckout();return}}
-  const t=calc(c.mode),num=c.card.num.replace(/\s|-/g,"");
+  const num=c.card.num.replace(/\s|-/g,"");
+  finishOrder(c.pay==="card"?`card ending in ${num.slice(-4)}`:c.pay==="apple"?"Apple Pay":"Google Pay")}
+function finishOrder(paidWith,paymentId){const c=CO(),t=calc(c.mode);
   const o={id:nextOrderNo(),created:new Date().toISOString(),email:S.user.email,mode:c.mode,when:slotLabel(c.day,c.slot),
     where:c.mode==="delivery"?`${c.street}, ${c.postal}`:`FreshMarket ${store().name}, ${store().addr}`,
     items:t.items.map(({p,q})=>({id:p.id,name:p.name,emoji:p.emoji,q,price:p.price})),sub:r2(t.sub),saved:r2(t.saved),hst:r2(t.hst),fee:t.fee,total:r2(t.total),status:0,
-    paidWith:c.pay==="card"?`card ending in ${num.slice(-4)}`:c.pay==="apple"?"Apple Pay":"Google Pay"};
+    paidWith,paymentId:paymentId||null};
   saveOrders([o,...(S.orders||[])]);S.cart={};save();S.co=null;render();renderOrder(o,true)}
 
 document.addEventListener("click",e=>{const t=e.target.closest("button,input[data-pay]");if(!t)return;const d=t.dataset,c=CO();

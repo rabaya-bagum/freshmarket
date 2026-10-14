@@ -19,6 +19,37 @@ Live demo: https://claude.ai/artifact/Vubfe2xakH4KaGGF5Q8yyG
 
 Sample data: 50 products across 7 departments, and 3 stores (Square One, Oakville Place, Liberty Village), each with its own stock, hours and delivery area.
 
+## Real payments with Stripe
+
+The checkout works in two modes:
+
+- **Demo mode** (default): fake card form, no money moves. Used by the Claude demo link and GitHub Pages.
+- **Stripe mode**: Stripe's secure payment form (cards, Apple Pay, Google Pay). Switches on automatically when the site runs on Vercel with Stripe keys set.
+
+How it is built:
+
+| File | Job |
+|------|-----|
+| `api/config.js` | `GET /api/config` tells the page whether Stripe is on, and shares only the publishable key |
+| `api/create-payment-intent.js` | `POST /api/create-payment-intent` prices the order on the server and creates the Stripe payment |
+| `api/_pricing.js` | Server-side prices, HST, delivery fee, minimum order and the 110% hold for items sold by weight |
+| `data/prices.json` | The price list the server trusts. A test fails if it ever differs from the store page |
+
+The browser only sends product IDs and quantities. The server works out the amount, so nobody can change what they pay. Card numbers go straight to Stripe and never touch this code. Orders with items sold by weight are authorized now and captured later (`capture_method: manual`).
+
+### Turn it on (test mode)
+
+1. Create a free Stripe account at https://dashboard.stripe.com/register and stay in **Test mode**.
+2. In Stripe, open **Developers → API keys** and copy the publishable key (`pk_test_…`) and secret key (`sk_test_…`).
+3. Import this repo at https://vercel.com/new (no build settings needed).
+4. In Vercel, open **Settings → Environment Variables** and add:
+   - `STRIPE_PUBLISHABLE_KEY` = `pk_test_…`
+   - `STRIPE_SECRET_KEY` = `sk_test_…`
+5. Redeploy. Checkout now shows Stripe's form. Pay with `4242 4242 4242 4242`, any future expiry, any 3 digits.
+6. See test payments in Stripe under **Payments**.
+
+Never put the secret key in code, in the README, or in a chat. It belongs only in Vercel's environment variables.
+
 ## Run it
 
 Open `index.html` in a browser. No build step or server needed.
@@ -29,7 +60,7 @@ Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. U
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-8 and the store picker: 88 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (208 checks).
+Playwright tests cover GP-1 to GP-8, the store picker and Stripe payments: 97 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (226 checks). The payment server has 24 more unit tests.
 
 | File | Story |
 |------|-------|
@@ -40,6 +71,8 @@ Playwright tests cover GP-1 to GP-8 and the store picker: 88 functional tests an
 | `tests/cart.spec.ts` | GP-5 count, totals, savings, remove, stock cap |
 | `tests/checkout.spec.ts` | GP-6 slots and delivery area, GP-7 payment and declines, GP-8 confirmation, tracking, history, reorder |
 | `tests/stores.spec.ts` | Store picker, per-store stock, cart re-check on store change |
+| `tests/stripe.spec.ts` | Stripe checkout with a stand-in Stripe.js: payment form, success, decline, server errors, price check, weighted-item hold, demo fallback |
+| `api-tests/payments.test.js` | Server pricing and payment endpoints, with a fake Stripe client |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 
 Run locally:
@@ -50,6 +83,7 @@ npx playwright install chromium
 npm test
 npm run test:report   # open the HTML report
 npm run lint          # check every test has an assertion
+npm run test:api      # payment server unit tests
 ```
 
 ### Visual tests

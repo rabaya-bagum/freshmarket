@@ -34,6 +34,9 @@ jobs:
       - name: Lint tests (every test must have an assertion)
         run: npx eslint tests
 
+      - name: Payment server unit tests
+        run: npm run test:api
+
       - name: Create or approve visual baselines
         if: github.event_name != 'pull_request'
         env:
