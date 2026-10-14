@@ -31,19 +31,24 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Run functional and visual tests
+      - name: Create or approve visual baselines
+        if: github.event_name != 'pull_request'
         env:
           HOME: /root
         run: |
           if [ "${{ inputs.update_snapshots }}" = "true" ]; then
-            npx playwright test --update-snapshots=all
-          else
-            # First run creates any missing baselines; later runs compare against them
-            npx playwright test --update-snapshots=missing
+            npx playwright test tests/visual.spec.ts --update-snapshots=all --reporter=line || true
+          elif [ ! -d tests/visual.spec.ts-snapshots ]; then
+            npx playwright test tests/visual.spec.ts --update-snapshots=missing --reporter=line || true
           fi
 
+      - name: Run functional and visual tests
+        env:
+          HOME: /root
+        run: npx playwright test
+
       - name: Save new or approved baselines
-        if: success() && github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git add tests/visual.spec.ts-snapshots
