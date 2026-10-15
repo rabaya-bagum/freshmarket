@@ -10,7 +10,7 @@ export default [
     rules: {
       ...playwright.configs['flat/recommended'].rules,
       // Every test must contain at least one assertion
-      'playwright/expect-expect': ['error', { assertFunctionNames: ['openCart', 'add', 'open', 'openStable'] }],
+      'playwright/expect-expect': ['error', { assertFunctionNames: ['openCart', 'add', 'open', 'openStable', 'expectNoA11yViolations'] }],
       // No forgotten .only or skipped tests
       'playwright/no-focused-test': 'error',
       'playwright/no-skipped-test': 'error',
