@@ -6,8 +6,9 @@
   "scripts": {
     "test": "playwright test",
     "test:report": "playwright show-report",
-    "lint": "eslint tests",
-    "test:api": "node --test api-tests/*.test.js"
+    "lint": "eslint tests tests-smoke",
+    "test:api": "node --test api-tests/*.test.js",
+    "test:smoke": "playwright test -c playwright.smoke.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

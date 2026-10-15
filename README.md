@@ -62,6 +62,43 @@ Demo login: `demo@freshmarket.ca` / `Fresh123`
 
 Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. Use any future expiry and any 3-digit code.
 
+## Pipeline
+
+Every change goes through a pull request. Nothing reaches the live site unless all checks pass.
+
+```
+pull request ─► CI: Lint ─► Unit tests ─┬─► Browser tests ─┐
+                                        └─► Visual tests  ─┴─► all green?
+            ─► Vercel preview deploy ─► Smoke tests on the preview
+merge to main (only when every required check is green)
+            ─► Vercel production deploy ─► Smoke tests on production
+daily       ─► full CI run at 6 am, smoke tests on production at 6:30 am
+```
+
+| Workflow | File | Runs | Checks |
+|---|---|---|---|
+| CI | `.github/workflows/ci.yml` | Every PR, every push to main, daily | **Lint**, **Unit tests**, **Browser tests**, **Visual tests** |
+| Smoke | `.github/workflows/smoke.yml` | After every successful Vercel deploy (preview and production), daily, or on demand | Site loads with no script errors, Stripe config is valid and in test mode, the payment server prices orders and reaches Stripe, bad orders are rejected, cart totals, Stripe's card form loads |
+
+Smoke tests live in `tests-smoke/` and run against a real address:
+
+```bash
+SMOKE_URL=https://freshmarket-gules.vercel.app npm run test:smoke
+```
+
+They never place an order. The payment check creates an unconfirmed test-mode PaymentIntent and refuses to run if the site is on live Stripe keys.
+
+**Visual baselines** are only created or approved on branches, never on main. After an intended design change, run **Actions → CI → Run workflow** on your branch with **Approve new visual baselines** ticked; the new screenshots are committed to that branch and reviewed in the PR.
+
+### Branch protection (one-time setup)
+
+On GitHub: **Settings → Branches → Add branch ruleset** for `main`:
+- Require a pull request before merging
+- Require status checks to pass: `Lint`, `Unit tests`, `Browser tests`, `Visual tests`
+- Block force pushes
+
+If Vercel Deployment Protection is on for previews, create a **Protection Bypass for Automation** secret in Vercel (**Settings → Deployment Protection**) and save it in GitHub as the repository secret `VERCEL_AUTOMATION_BYPASS_SECRET`, so smoke tests can reach preview deploys.
+
 ## Automated tests
 
 Playwright tests cover GP-1 to GP-8, the store picker and Stripe payments: 97 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (226 checks). The payment server has 24 more unit tests.
@@ -94,11 +131,11 @@ npm run test:api      # payment server unit tests
 
 Each visual test takes a screenshot and compares it with an approved baseline in `tests/visual.spec.ts-snapshots/`. If the page changes by more than 1% of pixels, the test fails and the HTML report shows the expected, actual and diff images.
 
-- Baselines are created on the first GitHub Actions run and committed automatically.
-- After an intended design change, open **Actions → Playwright tests → Run workflow**, tick **Approve new visual baselines**, and run it.
+- New baselines are created on the pull request branch and committed there automatically, so they are reviewed with the change.
+- After an intended design change, open **Actions → CI → Run workflow** on your branch, tick **Approve new visual baselines**, and run it.
 - Baselines are made in the official Playwright Docker image, so compare in CI rather than on your own computer (fonts differ between machines).
 
-GitHub Actions runs the suite on every push, every pull request and daily at 6 am. Each run uploads the HTML report as a downloadable artifact.
+Each CI job uploads its HTML report as a downloadable artifact (`browser-report`, `visual-report`, `smoke-report`).
 
 ## Demo limitations
 

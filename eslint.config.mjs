@@ -5,7 +5,7 @@ import playwright from 'eslint-plugin-playwright';
 export default [
   ...tseslint.configs.recommended,
   {
-    files: ['tests/**/*.ts'],
+    files: ['tests/**/*.ts', 'tests-smoke/**/*.ts'],
     ...playwright.configs['flat/recommended'],
     rules: {
       ...playwright.configs['flat/recommended'].rules,
