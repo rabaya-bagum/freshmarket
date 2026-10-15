@@ -67,8 +67,9 @@ Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. U
 Every change goes through a pull request. Nothing reaches the live site unless all checks pass.
 
 ```
-pull request ─► CI: Lint ─► Unit tests ─┬─► Browser tests ─┐
-                                        └─► Visual tests  ─┴─► all green?
+pull request ─► CI: Lint ─► Unit tests ─┬─► Browser tests       ─┐
+                                        ├─► Visual tests        ─┤
+                                        └─► Accessibility tests ─┴─► all green?
             ─► Vercel preview deploy ─► Smoke tests on the preview
 merge to main (only when every required check is green)
             ─► Vercel production deploy ─► Smoke tests on production
@@ -77,7 +78,7 @@ daily       ─► full CI run at 6 am, smoke tests on production at 6:30 am
 
 | Workflow | File | Runs | Checks |
 |---|---|---|---|
-| CI | `.github/workflows/ci.yml` | Every PR, every push to main, daily | **Lint**, **Unit tests**, **Browser tests**, **Visual tests** |
+| CI | `.github/workflows/ci.yml` | Every PR, every push to main, daily | **Lint**, **Unit tests**, **Browser tests**, **Visual tests**, **Accessibility tests** |
 | Smoke | `.github/workflows/smoke.yml` | After every successful Vercel deploy (previews at their preview address, production at its public address `freshmarket-gules.vercel.app`), daily, or on demand. GitHub Pages deploys are skipped | Site loads with no script errors, Stripe config is valid and in test mode, the payment server prices orders and reaches Stripe, bad orders are rejected, cart totals, Stripe's card form loads |
 
 Smoke tests live in `tests-smoke/` and run against a real address:
@@ -94,7 +95,7 @@ They never place an order. The payment check creates an unconfirmed test-mode Pa
 
 On GitHub: **Settings → Branches → Add branch ruleset** for `main`:
 - Require a pull request before merging
-- Require status checks to pass: `Lint`, `Unit tests`, `Browser tests`, `Visual tests`
+- Require status checks to pass: `Lint`, `Unit tests`, `Browser tests`, `Visual tests`, `Accessibility tests`
 - Block force pushes
 
 If Vercel Deployment Protection is on for previews, create a **Protection Bypass for Automation** secret in Vercel (**Settings → Deployment Protection**) and save it in GitHub as the repository secret `VERCEL_AUTOMATION_BYPASS_SECRET`, so smoke tests can reach preview deploys.
@@ -114,6 +115,7 @@ Playwright tests cover GP-1 to GP-8, the store picker and Stripe payments: 97 fu
 | `tests/stores.spec.ts` | Store picker, per-store stock, cart re-check on store change |
 | `tests/stripe.spec.ts` | Stripe checkout with a stand-in Stripe.js: payment form, success, decline, server errors, price check, weighted-item hold, demo fallback |
 | `api-tests/payments.test.js` | Server pricing and payment endpoints, with a fake Stripe client |
+| `tests/accessibility.spec.ts` | Accessibility: every screen scanned with axe-core against WCAG 2.1 AA in light and dark mode, plus keyboard-only shopping, focus handling, announcements and 200% zoom |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 
 Run locally:
@@ -136,6 +138,17 @@ Each visual test takes a screenshot and compares it with an approved baseline in
 - Baselines are made in the official Playwright Docker image, so compare in CI rather than on your own computer (fonts differ between machines).
 
 Each CI job uploads its HTML report as a downloadable artifact (`browser-report`, `visual-report`, `smoke-report`).
+
+### Accessibility tests
+
+`tests/accessibility.spec.ts` checks the store against **WCAG 2.1 level AA**, the standard behind Ontario's AODA.
+
+- **Every screen is scanned with axe-core**, in light and dark mode, on desktop and phone: home, filters, all 50 products, cards with quantity controls, store switch, search suggestions, results and no results, product page (in stock and out of stock), empty and full cart, sign in, sign-in error, create account, reset password, account panel, checkout (delivery, errors, pickup), review and pay, declined card, order confirmation and order history.
+- **Keyboard checks:** a skip link to the products, header tab order with a visible focus ring, dialogs that take focus, keep it inside and give it back on Escape, and a full keyboard-only journey from sign-in to payment.
+- **Screen readers:** notifications use `role="status"`, errors use `role="alert"`, dialogs are `aria-modal`.
+- **Zoom:** text at 200% causes no sideways scrolling.
+
+Stripe's card form is a third-party frame, so it is left out of the scan. A failing scan lists each problem, the element, and how to fix it.
 
 ## Demo limitations
 

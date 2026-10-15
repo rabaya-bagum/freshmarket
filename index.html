@@ -6,7 +6,7 @@
 /* Layout: sticky header with search + cart, department rail, product grid; drawer for cart, dialog for product + account */
 :root{
   --bg:#f6f8f4; --surface:#ffffff; --ink:#17251b; --muted:#5d6b60; --line:#dde5da;
-  --leaf:#2e7a3c; --leaf-ink:#ffffff; --leaf-soft:#e3f0e2; --sale:#f2c230; --sale-ink:#3a2c00; --danger:#b3261e;
+  --leaf:#2a7237; --leaf-ink:#ffffff; --leaf-soft:#e3f0e2; --sale:#f2c230; --sale-ink:#3a2c00; --danger:#b3261e;
   --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
 }
@@ -117,6 +117,9 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 .link{background:none;border:0;color:var(--leaf);font-weight:600;padding:0;font-size:13px;justify-self:start}
 .note{font-size:12px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60}
+.skip{position:absolute;left:16px;top:-60px;z-index:100;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:0 0 10px 10px;font-weight:700;text-decoration:none}
+.skip:focus{top:0}
+main:focus{outline:none}
 .demo{background:var(--sale);color:var(--sale-ink);text-align:center;font-size:12px;font-weight:700;padding:5px 16px;letter-spacing:.02em}
 .co{width:min(720px,100%)}
 .payel{min-height:120px;margin:4px 0 10px}
@@ -167,6 +170,7 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 @keyframes pop{from{transform:scale(.97);opacity:.6}}
 </style>
 
+<a class="skip" href="#main">Skip to products</a>
 <div class="demo">Demo store · sample products and prices · no real orders or payments</div>
 <header>
   <div class="wrap">
@@ -184,7 +188,7 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
   </div>
 </header>
 
-<main class="wrap">
+<main class="wrap" id="main" tabindex="-1">
   <div class="head">
     <div><h1 id="title">All departments</h1><p class="sub" id="subtitle"></p></div>
     <div class="tools">
@@ -202,7 +206,7 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 </main>
 
 <div id="layer"></div>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 const DEPTS=["Produce","Meat & Seafood","Bakery","Deli","Dairy & Eggs","Pantry","Prepared Meals"];
@@ -328,10 +332,10 @@ function renderCart(){
   const items=Object.entries(S.cart).map(([id,q])=>({p:P.find(x=>x.id==id),q})).filter(x=>x.p);
   const sub=items.reduce((a,x)=>a+x.p.price*x.q,0),saved=items.reduce((a,x)=>a+(x.p.was?(x.p.was-x.p.price)*x.q:0),0);
   const fee=sub>=50||!sub?0:4.99,hst=sub*0.13*0.25; // groceries mostly zero-rated; demo estimate on taxable share
-  $("layer").innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-label="Your cart">
+  $("layer").innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Your cart">
    <div class="dhead"><h2>Your cart</h2><button class="x" data-close aria-label="Close cart">×</button></div>
    <div class="lines">${items.length?items.map(({p,q})=>`<div class="line"><div class="mini" style="background:${TINT[p.dept]}">${p.emoji}</div>
-     <div style="min-width:0"><div style="font-weight:600">${esc(p.name)}</div><div class="size">${esc(p.size)}</div>${q>stockOf(p)?`<div class="err">Only ${stockOf(p)} left</div>`:""}
+     <div style="min-width:0"><div style="font-weight:600">${esc(p.name)}</div><div class="size">${esc(p.size)}</div>${q>stockOf(p)?`<div class="err" role="alert">Only ${stockOf(p)} left</div>`:""}
      <div class="qty"><button data-dec="${p.id}" aria-label="Decrease">−</button><span>${q}</span><button data-inc="${p.id}" aria-label="Increase">+</button></div></div>
      <div style="text-align:right"><b style="font-variant-numeric:tabular-nums">${money(p.price*q)}</b><br><button class="rm" data-rm="${p.id}">Remove</button></div></div>`).join("")
      :`<div class="empty"><h2>Your cart is empty</h2><p>Add something fresh to get started.</p></div>`}</div>
@@ -349,7 +353,7 @@ function renderCart(){
 function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
   const sk=stockOf(p),sn=store().name;
   const st=sk===0?["out",`Out of stock at ${sn}`]:sk<5?["low",`Only ${sk} left at ${sn}`]:["ok",`In stock at ${sn}`];
-  $("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel" role="dialog" aria-label="${esc(p.name)}">
+  $("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel" role="dialog" aria-modal="true" aria-label="${esc(p.name)}">
    <button class="x" data-close aria-label="Close">×</button>
    <div class="pd"><div class="thumb" style="background:${TINT[p.dept]}">${p.emoji}</div>
    <div style="min-width:0"><span class="local">${p.local?"Ontario grown · ":""}${esc(p.origin)}</span>
@@ -368,7 +372,7 @@ function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
 // ---- account dialog
 let authMode="in",authMsg="";
 function renderAuth(){
-  if(S.user){$("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-label="Account"><button class="x" data-close aria-label="Close">×</button>
+  if(S.user){$("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-modal="true" aria-label="Account"><button class="x" data-close aria-label="Close">×</button>
    <h2>Hi, ${esc(S.user.name)}</h2><p class="sub">${esc(S.user.email)}</p><p>Your cart is saved to your account.</p><div class="cofoot" style="justify-content:flex-start"><button class="ghost" data-orders>Your orders${S.orders?.length?` (${S.orders.length})`:""}</button><button class="ghost" data-logout>Sign out</button></div></div></div>`;return}
   const t=(m,l)=>`<button role="tab" data-mode="${m}" aria-selected="${authMode===m}">${l}</button>`;
   let body="";
@@ -377,7 +381,7 @@ function renderAuth(){
   if(authMode==="up")body=`<form data-form="up"><label>Full name<input id="nm" required autocomplete="name"></label><label>Email<input id="em" type="email" required autocomplete="email"></label><label>Password<input id="pw" type="password" required minlength="8" autocomplete="new-password"></label>
     <div class="note">At least 8 characters with a number.</div><button class="checkout" type="submit">Create account</button></form>`;
   if(authMode==="reset")body=`<form data-form="reset"><label>Email<input id="em" type="email" required autocomplete="email"></label><button class="checkout" type="submit">Send reset link</button><button class="link" type="button" data-mode="in">Back to sign in</button></form>`;
-  $("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-label="Sign in"><button class="x" data-close aria-label="Close">×</button>
+  $("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-modal="true" aria-label="Sign in"><button class="x" data-close aria-label="Close">×</button>
    <h2>${authMode==="reset"?"Reset password":"Welcome to FreshMarket"}</h2>
    ${authMode!=="reset"?`<div class="tabs" role="tablist">${t("in","Sign in")}${t("up","Create account")}</div>`:`<p class="sub">We'll email you a link to set a new password.</p>`}
    ${authMsg}${body}
@@ -410,15 +414,32 @@ $("sort").onchange=e=>{S.sort=e.target.value;render()};
 $("cartBtn").onclick=()=>{drawerOpen=true;openProduct=null;renderCart()};
 $("acct").onclick=()=>{authMsg="";renderAuth()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLayer()});
+// ---- keyboard focus for dialogs (open: focus moves in · Tab stays inside · close: focus returns)
+const FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+const focusKey=el=>{if(!el||el===document.body)return null;if(el.id)return"#"+CSS.escape(el.id);for(const a of el.getAttributeNames())if(a.startsWith("data-"))return`[${a}="${CSS.escape(el.getAttribute(a))}"]`;return null};
+let opener=null,openerKey=null,lastKey=null;
+document.addEventListener("focusin",e=>{if($("layer").contains(e.target))lastKey=focusKey(e.target)});
+new MutationObserver(()=>{const layer=$("layer"),dlg=layer.querySelector('[role="dialog"]');
+  if(!dlg){const back=(opener&&opener.isConnected)?opener:(openerKey&&document.querySelector(openerKey));opener=openerKey=lastKey=null;if(back)back.focus();return}
+  if(!opener&&!layer.contains(document.activeElement)){opener=document.activeElement;openerKey=focusKey(opener)}
+  if(dlg.contains(document.activeElement))return;
+  const same=lastKey&&dlg.querySelector(lastKey);
+  const first=dlg.querySelector('input:not([type=radio]):not([disabled]),select')||dlg.querySelector(FOCUSABLE);
+  (same||first||dlg).focus();
+}).observe($("layer"),{childList:true});
+document.addEventListener("keydown",e=>{if(e.key!=="Tab")return;const dlg=$("layer").querySelector('[role="dialog"]');if(!dlg)return;
+  const f=[...dlg.querySelectorAll(FOCUSABLE)].filter(x=>x.offsetParent!==null);if(!f.length)return;
+  const i=f.indexOf(document.activeElement);
+  if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
 
 document.addEventListener("submit",e=>{e.preventDefault();if(e.target.dataset.form==="pay"){placeOrder();return}const f=e.target.dataset.form,em=($("em")?.value||"").trim().toLowerCase(),pw=$("pw")?.value||"";
   if(f==="in"){const u=S.users[em];
-    if(u&&u.fails>=5){authMsg=`<p class="err">This account is locked after 5 failed attempts. Reset your password to unlock it.</p>`;return renderAuth()}
-    if(!u||u.pw!==pw){if(u)u.fails++;const left=u?5-u.fails:null;authMsg=`<p class="err">That email and password don't match.${u&&left>0?` ${left} attempt${left===1?"":"s"} left before the account locks.`:""}</p>`;return renderAuth()}
-    if(!u.verified){authMsg=`<p class="err">Verify your email first. We sent a link to ${esc(em)}.</p>`;u.verified=true;return renderAuth()}
+    if(u&&u.fails>=5){authMsg=`<p class="err" role="alert">This account is locked after 5 failed attempts. Reset your password to unlock it.</p>`;return renderAuth()}
+    if(!u||u.pw!==pw){if(u)u.fails++;const left=u?5-u.fails:null;authMsg=`<p class="err" role="alert">That email and password don't match.${u&&left>0?` ${left} attempt${left===1?"":"s"} left before the account locks.`:""}</p>`;return renderAuth()}
+    if(!u.verified){authMsg=`<p class="err" role="alert">Verify your email first. We sent a link to ${esc(em)}.</p>`;u.verified=true;return renderAuth()}
     u.fails=0;signIn(u,em)}
-  if(f==="up"){if(S.users[em]){authMsg=`<p class="err">An account with this email already exists. Sign in instead.</p>`;return renderAuth()}
-    if(!/\d/.test(pw)){authMsg=`<p class="err">Add at least one number to your password.</p>`;return renderAuth()}
+  if(f==="up"){if(S.users[em]){authMsg=`<p class="err" role="alert">An account with this email already exists. Sign in instead.</p>`;return renderAuth()}
+    if(!/\d/.test(pw)){authMsg=`<p class="err" role="alert">Add at least one number to your password.</p>`;return renderAuth()}
     S.users[em]={pw,name:$("nm").value.trim(),verified:false,fails:0};authMode="in";authMsg=`<p class="okmsg">Account created. We sent a verification link to ${esc(em)}. (Demo: sign in twice to simulate verifying.)</p>`;renderAuth()}
   if(f==="reset"){const u=S.users[em];if(u)u.fails=0;authMode="in";authMsg=`<p class="okmsg">If an account exists for ${esc(em)}, a reset link is on its way.</p>`;renderAuth()}
 });
@@ -437,8 +458,8 @@ async function mountStripe(t){const box=$("pay-el");if(!box)return;
   try{const stripe=await loadStripe(),css=getComputedStyle(document.documentElement);
     stripeEls=stripe.elements({mode:"payment",amount:chargeCents(t),currency:"cad",captureMethod:t.weighted?"manual":"automatic",
       appearance:{theme:"stripe",variables:{colorPrimary:css.getPropertyValue("--leaf").trim(),colorText:css.getPropertyValue("--ink").trim(),colorBackground:css.getPropertyValue("--surface").trim(),borderRadius:"9px"}}});
-    if($("pay-el")===box){const pe=stripeEls.create("payment",{layout:"tabs"});pe.on("loaderror",()=>{stripeEls=null;box.innerHTML=`<p class="err" id="pay-loaderr">The payment form could not load. Refresh the page and try again.</p>`});pe.mount(box)}}
-  catch(e){box.innerHTML=`<p class="err">The payment form could not load. Check your connection and try again.</p>`}}
+    if($("pay-el")===box){const pe=stripeEls.create("payment",{layout:"tabs"});pe.on("loaderror",()=>{stripeEls=null;box.innerHTML=`<p class="err" role="alert" id="pay-loaderr">The payment form could not load. Refresh the page and try again.</p>`});pe.mount(box)}}
+  catch(e){box.innerHTML=`<p class="err" role="alert">The payment form could not load. Check your connection and try again.</p>`}}
 function showPayError(msg){const c=CO();c.err=msg;let el=$("co-err");
   if(!el){el=document.createElement("p");el.className="err";el.id="co-err";el.setAttribute("role","alert");$("pay-el").after(el)}el.textContent=msg}
 async function stripePay(){const c=CO(),t=calc(c.mode),btn=document.querySelector('[data-form="pay"] button[type="submit"]');
@@ -477,7 +498,7 @@ function saveOrders(o){try{localStorage.setItem(orderKey(),JSON.stringify(o))}ca
 function nextOrderNo(){let n=1001;try{n=+(localStorage.getItem("fm-order-seq")||1001)}catch(e){}try{localStorage.setItem("fm-order-seq",String(n+1))}catch(e){}return"FM-"+n}
 
 function openCheckout(){S.co=null;CO();coOpen=true;coAnim=true;drawerOpen=false;openProduct=null;renderCheckout()}
-function coShell(inner,label){const a=coAnim;coAnim=false;return`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel co${a?"":" still"}" role="dialog" aria-label="${label}"><button class="x" data-close aria-label="Close">×</button>${inner}</div></div>`}
+function coShell(inner,label){const a=coAnim;coAnim=false;return`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel co${a?"":" still"}" role="dialog" aria-modal="true" aria-label="${label}"><button class="x" data-close aria-label="Close">×</button>${inner}</div></div>`}
 function steps(cur){const names=["Delivery or pickup","Payment","Confirmed"];return`<ol class="steps">${names.map((n,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"${i===cur?' aria-current="step"':""}>${n}</li>`).join("")}</ol>`}
 
 function renderCheckout(){const c=CO(),t=calc(c.mode);
@@ -491,11 +512,11 @@ function renderCheckout(){const c=CO(),t=calc(c.mode);
      ${c.mode==="delivery"?`<div class="addr"><label>Street address<input id="co-street" autocomplete="street-address" value="${esc(c.street)}"></label>
        <label>Postal code<input id="co-postal" autocomplete="postal-code" maxlength="7" value="${esc(c.postal)}"></label><button type="button" class="ghost" data-co="zip">Check</button></div>
        ${c.zipMsg}<p class="note">Delivered from ${esc(store().name)} · ${money(DELIVERY_FEE)} fee, free over ${money(FREE_DELIVERY)} · minimum order ${money(DELIVERY_MIN)}</p>
-       ${min?`<p class="err" id="co-min">Delivery needs a minimum order of ${money(DELIVERY_MIN)}. Add ${money(DELIVERY_MIN-t.sub)} more or choose pickup.</p>`:""}`
+       ${min?`<p class="err" role="alert" id="co-min">Delivery needs a minimum order of ${money(DELIVERY_MIN)}. Add ${money(DELIVERY_MIN-t.sub)} more or choose pickup.</p>`:""}`
      :`<p class="pick"><b>FreshMarket ${esc(store().name)}</b><br>${esc(store().addr)}<br><span class="note">Park in a pickup bay and tap “I'm here” in your confirmation email. Free.</span></p>`}
      <h3>Choose a time</h3><div class="days" role="group" aria-label="Day">${dayBtns}</div><div class="slots" role="group" aria-label="Time">${slotBtns}</div>
      ${c.slot!==null&&c.held?`<p class="okmsg" id="co-hold">We're holding ${esc(slotLabel(c.day,c.slot))} for you until ${fmtTime(new Date(c.held))}.</p>`:""}
-     ${c.err?`<p class="err" id="co-err">${c.err}</p>`:""}
+     ${c.err?`<p class="err" role="alert" id="co-err">${c.err}</p>`:""}
      <div class="cofoot"><span>Estimated total <b>${money(t.total)}</b></span><button class="checkout" type="button" data-co="next">Continue to payment</button></div>`,"Checkout");
     return}
   if(c.step==="pay"){
@@ -542,10 +563,10 @@ function coValidateFulfil(){const c=CO(),t=calc(c.mode);
   if(c.mode==="delivery"){if(!c.street.trim())return"Enter your street address.";if(!c.zipOk)return"Check your postal code for delivery.";if(t.sub<DELIVERY_MIN)return`Delivery needs a minimum order of ${money(DELIVERY_MIN)}.`}
   if(c.slot===null)return"Choose a delivery or pickup time.";return""}
 function checkZip(){const c=CO(),v=c.postal.trim().toUpperCase().replace(/\s+/,"");
-  if(!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(v)){c.zipOk=false;c.zipMsg=`<p class="err" id="co-zip">Enter a postal code like L5B 2C9.</p>`;return}
+  if(!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(v)){c.zipOk=false;c.zipMsg=`<p class="err" role="alert" id="co-zip">Enter a postal code like L5B 2C9.</p>`;return}
   c.postal=v.slice(0,3)+" "+v.slice(3);
   if(store().areas.includes(v.slice(0,3))){c.zipOk=true;c.zipMsg=`<p class="okmsg" id="co-zip">We deliver to ${c.postal}.</p>`}
-  else{c.zipOk=false;c.zipMsg=`<p class="err" id="co-zip">We don't deliver to ${c.postal} from ${esc(store().name)} yet. Choose pickup or another store.</p>`}}
+  else{c.zipOk=false;c.zipMsg=`<p class="err" role="alert" id="co-zip">We don't deliver to ${c.postal} from ${esc(store().name)} yet. Choose pickup or another store.</p>`}}
 function luhn(n){let s=0,alt=false;for(let i=n.length-1;i>=0;i--){let d=+n[i];if(alt){d*=2;if(d>9)d-=9}s+=d;alt=!alt}return s%10===0}
 function readCard(){const c=CO();if(c.pay!=="card")return;for(const [k,id] of [["name","cc-name"],["num","cc-num"],["exp","cc-exp"],["cvc","cc-cvc"]])c.card[k]=$(id)?.value||""}
 function cardError(){const c=CO().card,num=c.num.replace(/\s|-/g,"");
@@ -596,7 +617,7 @@ $("q").addEventListener("input",()=>{sel=-1;suggest()});
 $("q").addEventListener("keydown",e=>{const items=[...$("suggest").querySelectorAll("button")];
   if(e.key==="ArrowDown"){sel=Math.min(sel+1,items.length-1);suggest();e.preventDefault()}
   else if(e.key==="ArrowUp"){sel=Math.max(sel-1,-1);suggest();e.preventDefault()}
-  else if(e.key==="Enter"){if(sel>=0&&items[sel]){renderProduct(items[sel].dataset.s)}else{S.q=$("q").value.trim();S.dept=null;S.shown=12;render()}$("suggest").hidden=true}});
+  else if(e.key==="Enter"){e.preventDefault();if(sel>=0&&items[sel]){renderProduct(items[sel].dataset.s)}else{S.q=$("q").value.trim();S.dept=null;S.shown=12;render()}$("suggest").hidden=true}});
 $("suggest").addEventListener("mousedown",e=>{const b=e.target.closest("[data-s]");if(b){e.preventDefault();$("suggest").hidden=true;renderProduct(b.dataset.s)}});
 $("q").addEventListener("blur",()=>setTimeout(()=>$("suggest").hidden=true,100));
 renderStore();

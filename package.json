@@ -11,6 +11,7 @@
     "test:smoke": "playwright test -c playwright.smoke.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.56.1",
     "eslint": "^9.15.0",
     "eslint-plugin-playwright": "^2.1.0",

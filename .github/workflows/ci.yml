@@ -1,6 +1,6 @@
 # CI: runs on every pull request and every push to main.
-# Stages fail fast: Lint → Unit tests → (Browser tests + Visual tests in parallel).
-# The four job names below are the "required checks" for branch protection on main.
+# Stages fail fast: Lint → Unit tests → (Browser, Visual and Accessibility tests in parallel).
+# The five job names below are the "required checks" for branch protection on main.
 name: CI
 
 on:
@@ -64,11 +64,34 @@ jobs:
         with: { node-version: 20, cache: npm }
       - run: npm ci
       - name: Functional tests (desktop and phone)
-        run: npx playwright test --grep-invert "Visual:"
+        run: npx playwright test --grep-invert "Visual:|Accessibility \\(|Keyboard access"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: browser-report
+          path: playwright-report/
+          retention-days: 14
+
+  accessibility:
+    name: Accessibility tests
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: WCAG 2.1 AA scan of every screen (light and dark, desktop and phone) and keyboard checks
+        run: npx playwright test tests/accessibility.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-report
           path: playwright-report/
           retention-days: 14
 
