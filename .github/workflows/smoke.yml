@@ -1,0 +1,47 @@
+# Smoke tests against the real deployment.
+# Vercel reports every deploy back to GitHub. When a deploy succeeds, this workflow runs the
+# smoke suite against that exact URL: the preview for a pull request, or production for main.
+# A failure shows up as a red check on the pull request or commit.
+name: Smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Address to test'
+        default: 'https://freshmarket-gules.vercel.app'
+        required: true
+  schedule:
+    - cron: '30 10 * * *' # daily at 6:30 am Toronto time, against production
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke tests (${{ github.event.deployment_status.environment || 'Production' }})
+    if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+      SMOKE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || inputs.url || 'https://freshmarket-gules.vercel.app' }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Smoke test ${{ env.SMOKE_URL }}
+        run: npx playwright test -c playwright.smoke.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-report
+          path: smoke-report/
+          retention-days: 14

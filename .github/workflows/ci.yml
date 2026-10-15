@@ -1,0 +1,124 @@
+# CI: runs on every pull request and every push to main.
+# Stages fail fast: Lint → Unit tests → (Browser tests + Visual tests in parallel).
+# The four job names below are the "required checks" for branch protection on main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 10 * * *' # daily at 6 am Toronto time
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Approve new visual baselines (run this on your branch, not main)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Every test must have an assertion
+        run: npm run lint
+
+  unit:
+    name: Unit tests
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Payment server unit tests
+        run: npm run test:api
+
+  browser:
+    name: Browser tests
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Functional tests (desktop and phone)
+        run: npx playwright test --grep-invert "Visual:"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-report
+          path: playwright-report/
+          retention-days: 14
+
+  visual:
+    name: Visual tests
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # only used to commit new baselines to a PR branch, never to main
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+
+      # Baselines are created or approved on branches only, so main never gets a bot commit
+      # and branch protection can stay strict.
+      - name: Create or approve baselines (branches only)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          if [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            npx playwright test tests/visual.spec.ts --update-snapshots=all --reporter=line || true
+          else
+            npx playwright test tests/visual.spec.ts --update-snapshots=missing --reporter=line || true
+          fi
+
+      - name: Compare screenshots with baselines
+        run: npx playwright test tests/visual.spec.ts
+
+      - name: Commit new baselines to the branch
+        if: always() && github.ref != 'refs/heads/main' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add tests/visual.spec.ts-snapshots
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -m "Update visual test baselines"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-report
+          path: playwright-report/
+          retention-days: 14
