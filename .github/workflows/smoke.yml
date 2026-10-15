@@ -1,6 +1,9 @@
 # Smoke tests against the real deployment.
-# Vercel reports every deploy back to GitHub. When a deploy succeeds, this workflow runs the
-# smoke suite against that exact URL: the preview for a pull request, or production for main.
+# Vercel reports every deploy back to GitHub. When a Vercel deploy succeeds, this workflow runs
+# the smoke suite: against the preview address for a pull request, and against the public
+# production address (PRODUCTION_URL) for main. Vercel's one-off deploy addresses are behind
+# a login, so production is always tested through its public domain.
+# Other deploys, such as GitHub Pages, are ignored: they cannot run the payment server.
 # A failure shows up as a red check on the pull request or commit.
 name: Smoke
 
@@ -21,14 +24,22 @@ permissions:
 jobs:
   smoke:
     name: Smoke tests (${{ github.event.deployment_status.environment || 'Production' }})
-    if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
+    if: >-
+      github.event_name != 'deployment_status' ||
+      (github.event.deployment_status.state == 'success' &&
+       (github.event.deployment_status.environment == 'Production' || startsWith(github.event.deployment_status.environment, 'Preview')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     env:
       HOME: /root
-      SMOKE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || inputs.url || 'https://freshmarket-gules.vercel.app' }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://freshmarket-gules.vercel.app' }}
+      SMOKE_URL: >-
+        ${{ inputs.url ||
+            (github.event.deployment_status.environment == 'Production' && (vars.PRODUCTION_URL || 'https://freshmarket-gules.vercel.app')) ||
+            github.event.deployment_status.environment_url ||
+            vars.PRODUCTION_URL || 'https://freshmarket-gules.vercel.app' }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@v4

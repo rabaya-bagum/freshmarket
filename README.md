@@ -78,7 +78,7 @@ daily       ─► full CI run at 6 am, smoke tests on production at 6:30 am
 | Workflow | File | Runs | Checks |
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | Every PR, every push to main, daily | **Lint**, **Unit tests**, **Browser tests**, **Visual tests** |
-| Smoke | `.github/workflows/smoke.yml` | After every successful Vercel deploy (preview and production), daily, or on demand | Site loads with no script errors, Stripe config is valid and in test mode, the payment server prices orders and reaches Stripe, bad orders are rejected, cart totals, Stripe's card form loads |
+| Smoke | `.github/workflows/smoke.yml` | After every successful Vercel deploy (previews at their preview address, production at its public address `freshmarket-gules.vercel.app`), daily, or on demand. GitHub Pages deploys are skipped | Site loads with no script errors, Stripe config is valid and in test mode, the payment server prices orders and reaches Stripe, bad orders are rejected, cart totals, Stripe's card form loads |
 
 Smoke tests live in `tests-smoke/` and run against a real address:
 
