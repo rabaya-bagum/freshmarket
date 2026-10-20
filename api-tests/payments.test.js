@@ -29,13 +29,13 @@ function fakeStripe() {
 }
 
 describe('priceOrder', () => {
-  test('delivery under $50 adds the $4.99 fee and estimated HST', () => {
+  test('delivery under $50 adds the $4.99 fee and 13% HST on that fee', () => {
     const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 3 }] });
     assert.equal(r.subtotal, 41.97);
-    assert.equal(r.hst, 1.36);
+    assert.equal(r.hst, 0.65);
     assert.equal(r.fee, 4.99);
-    assert.equal(r.total, 48.32);
-    assert.equal(r.amountCents, 4832);
+    assert.equal(r.total, 47.61);
+    assert.equal(r.amountCents, 4761);
     assert.equal(r.captureMethod, 'automatic');
   });
 
@@ -48,8 +48,8 @@ describe('priceOrder', () => {
   test('pickup has no fee and no minimum', () => {
     const r = priceOrder({ mode: 'pickup', items: [{ id: SOURDOUGH, q: 1 }] });
     assert.equal(r.fee, 0);
-    assert.equal(r.total, 5.67);
-    assert.equal(r.amountCents, 567);
+    assert.equal(r.total, 5.49);
+    assert.equal(r.amountCents, 549);
   });
 
   test('delivery under the $35 minimum is refused', () => {
@@ -61,17 +61,46 @@ describe('priceOrder', () => {
 
   test('weighted items are authorized at 110% and captured later', () => {
     const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 3 }, { id: CHICKEN, q: 1 }] });
-    assert.equal(r.total, 56.57);
+    assert.equal(r.total, 55.6);
     assert.equal(r.weighted, true);
-    assert.equal(r.amountCents, 6223);
+    assert.equal(r.amountCents, 6116);
     assert.equal(r.captureMethod, 'manual');
+  });
+
+  // GP-83: Ontario HST is 13% on taxable products only; basic groceries are zero-rated
+  test('zero-rated groceries carry no HST', () => {
+    const r = priceOrder({ mode: 'pickup', items: [{ id: id('Bananas'), q: 2 }, { id: id('Honeycrisp Apples'), q: 1 }] });
+    assert.equal(r.subtotal, 4.57);
+    assert.equal(r.hst, 0);
+    assert.equal(r.total, 4.57);
+  });
+
+  test('taxable products are charged 13% HST', () => {
+    const r = priceOrder({ mode: 'pickup', items: [{ id: id('Dark Chocolate Bar'), q: 1 }] });
+    assert.equal(r.subtotal, 3.99);
+    assert.equal(r.hst, 0.52);
+    assert.equal(r.total, 4.51);
+  });
+
+  test('a mixed basket is taxed only on its taxable lines and the delivery fee', () => {
+    // 41.97 olive oil (zero-rated) + 8.49 Caesar salad (taxable) = 50.46 → free delivery; HST = 8.49 × 13% = 1.10
+    const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 3 }, { id: id('Chicken Caesar Salad'), q: 1 }] });
+    assert.equal(r.subtotal, 50.46);
+    assert.equal(r.fee, 0);
+    assert.equal(r.hst, 1.1);
+    assert.equal(r.total, 51.56);
+  });
+
+  test('only salads, sushi and chocolate bars are taxable', () => {
+    assert.deepEqual(PRICES.filter((p) => p.taxable).map((p) => p.name).sort(), ['Chicken Caesar Salad', 'Dark Chocolate Bar', 'Veggie Sushi Box']);
+    assert.ok(PRICES.every((p) => typeof p.taxable === 'boolean'), 'every product says whether it is taxable');
   });
 
   test('matches the checkout page for every product (no rounding drift)', () => {
     for (const p of PRICES) {
       for (const q of [1, 2, 3, 7]) {
         const r = priceOrder({ mode: 'pickup', items: [{ id: p.id, q }] });
-        const sub = p.price * q, total = sub + sub * 0.13 * 0.25;
+        const sub = p.price * q, total = sub + (p.taxable ? sub * 0.13 : 0);
         const expected = Math.round((p.per ? Math.round(total * 1.1 * 100) / 100 : Math.round(total * 100) / 100) * 100);
         assert.equal(r.amountCents, expected, `${p.name} × ${q}`);
       }
@@ -106,9 +135,9 @@ describe('POST /api/create-payment-intent', () => {
     const stripe = fakeStripe(), res = mockRes();
     await createIntent.handler({ method: 'POST', body: { mode: 'delivery', items: [{ id: OIL, q: 3 }] } }, res, stripe);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res.body, { clientSecret: 'pi_test_123_secret_abc', amountCents: 4832, total: 48.32, captureMethod: 'automatic' });
+    assert.deepEqual(res.body, { clientSecret: 'pi_test_123_secret_abc', amountCents: 4761, total: 47.61, captureMethod: 'automatic' });
     assert.equal(stripe.calls.length, 1);
-    assert.equal(stripe.calls[0].amount, 4832);
+    assert.equal(stripe.calls[0].amount, 4761);
     assert.equal(stripe.calls[0].currency, 'cad');
     assert.equal(stripe.calls[0].capture_method, 'automatic');
     assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true });

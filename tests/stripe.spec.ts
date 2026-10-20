@@ -15,7 +15,7 @@ async function fakeStripe(page: Page, outcome: Outcome, opts: { serverAmount?: n
   await page.route('**/api/create-payment-intent', async (r) => {
     intents.push(r.request().postDataJSON());
     if (opts.serverError) return r.fulfill({ status: 400, json: { error: opts.serverError } });
-    await r.fulfill({ json: { clientSecret: 'pi_123_secret_x', amountCents: opts.serverAmount ?? 4832, total: 48.32, captureMethod: 'automatic' } });
+    await r.fulfill({ json: { clientSecret: 'pi_123_secret_x', amountCents: opts.serverAmount ?? 4761, total: 47.61, captureMethod: 'automatic' } });
   });
   await page.route('https://js.stripe.com/v3/', (r) =>
     r.fulfill({
@@ -72,7 +72,7 @@ test.describe('GP-7 Stripe payments', () => {
     await expect(co.getByRole('radio')).toHaveCount(0);
     await expect(co).toContainText('Stripe test mode: use 4242 4242 4242 4242');
     const opts = await page.evaluate(() => (window as any).__stripe.elementsOptions);
-    expect(opts).toMatchObject({ mode: 'payment', amount: 4832, currency: 'cad', captureMethod: 'automatic' });
+    expect(opts).toMatchObject({ mode: 'payment', amount: 4761, currency: 'cad', captureMethod: 'automatic' });
     expect(await page.evaluate(() => (window as any).__stripe.pk)).toBe('pk_test_fake');
   });
 
@@ -96,7 +96,7 @@ test.describe('GP-7 Stripe payments', () => {
     await pay.click();
     await expect(co.locator('#co-err')).toHaveText('Your card was declined.');
     await expect(pay).toBeEnabled();
-    await expect(pay).toHaveText('Place order · $48.32');
+    await expect(pay).toHaveText('Place order · $47.61');
     await expect(store.cartCount).toHaveText('3');
     await expect(co.getByTestId('stripe-element')).toBeVisible(); // form kept, no need to start over
   });
@@ -126,7 +126,7 @@ test.describe('GP-7 Stripe payments', () => {
   });
 
   test('weighted items are authorized now and captured after picking', async ({ store, page }) => {
-    await fakeStripe(page, 'requires_capture', { serverAmount: 6223 });
+    await fakeStripe(page, 'requires_capture', { serverAmount: 6116 });
     await page.reload();
     await store.signIn(DEMO.email, DEMO.password);
     await store.department('Pantry');
@@ -143,7 +143,7 @@ test.describe('GP-7 Stripe payments', () => {
     await co.getByRole('group', { name: 'Time' }).getByRole('button', { name: '10 am – 11 am' }).click();
     await co.getByRole('button', { name: 'Continue to payment' }).click();
     await expect(co.getByTestId('stripe-element')).toBeVisible();
-    expect(await page.evaluate(() => (window as any).__stripe.elementsOptions)).toMatchObject({ amount: 6223, captureMethod: 'manual' });
+    expect(await page.evaluate(() => (window as any).__stripe.elementsOptions)).toMatchObject({ amount: 6116, captureMethod: 'manual' });
 
     await co.getByRole('button', { name: /^Place order/ }).click();
     await expect(page.getByRole('dialog', { name: 'Order FM-1001' }).getByRole('heading')).toHaveText('Order FM-1001 confirmed');
@@ -195,9 +195,9 @@ test.describe('GP-7 Stripe payments', () => {
   });
 });
 
-test('server price list matches the store’s prices', async ({ store, page }) => {
+test('server price list matches the store’s prices and HST status', async ({ store, page }) => {
   await expect(store.title).toHaveText('All departments');
   const prices = JSON.parse(readFileSync('data/prices.json', 'utf8'));
-  const shop = await page.evaluate(() => (window as any).FM_PRODUCTS.map((p) => ({ id: p.id, name: p.name, price: p.price, per: p.per || null })));
+  const shop = await page.evaluate(() => (window as any).FM_PRODUCTS.map((p) => ({ id: p.id, name: p.name, price: p.price, per: p.per || null, taxable: p.taxable })));
   expect(shop).toEqual(prices);
 });

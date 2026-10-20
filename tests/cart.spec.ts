@@ -34,10 +34,10 @@ test.describe('GP-5 Shopping cart', () => {
     const drawer = await openCart(page);
     const totals = drawer.locator('.totals');
     await expect(row(totals, 'Subtotal')).toHaveText('Subtotal$10.98');
-    await expect(row(totals, 'Est. HST')).toHaveText('Est. HST$0.36');
+    await expect(row(totals, 'Est. HST')).toHaveText('Est. HST$0.65');
     await expect(row(totals, 'Delivery fee')).toHaveText('Delivery fee$4.99');
     await expect(totals.getByText('Add $39.02 more for free delivery.')).toBeVisible();
-    await expect(totals.locator('.grand')).toHaveText('Estimated total$16.33');
+    await expect(totals.locator('.grand')).toHaveText('Estimated total$16.62');
     await expect(totals.locator('.save')).toHaveCount(0);
   });
 
@@ -57,6 +57,22 @@ test.describe('GP-5 Shopping cart', () => {
     const drawer = await openCart(page);
     await expect(row(drawer.locator('.totals'), 'Delivery fee')).toHaveText('Delivery feeFree');
     await expect(drawer.getByText(/more for free delivery/)).toHaveCount(0);
+  });
+
+  // GP-83: HST is 13% on taxable items and the delivery fee; basic groceries are zero-rated
+  test('zero-rated groceries add HST only on the delivery fee', async ({ page }) => {
+    await add(page, 'Produce', 'Bananas'); // $0.79 /lb, zero-rated
+    const drawer = await openCart(page);
+    // 13% of the $4.99 delivery fee only
+    await expect(row(drawer.locator('.totals'), 'Est. HST')).toHaveText('Est. HST$0.65');
+  });
+
+  test('taxable items add 13% HST', async ({ page }) => {
+    await add(page, 'Pantry', 'Dark Chocolate Bar'); // $3.99, taxable confectionery
+    const drawer = await openCart(page);
+    // 13% of ($3.99 + $4.99 delivery fee) = $1.17
+    await expect(row(drawer.locator('.totals'), 'Est. HST')).toHaveText('Est. HST$1.17');
+    await expect(drawer.locator('.totals .grand')).toHaveText('Estimated total$10.15');
   });
 
   test('shows savings for sale items', async ({ page }) => {

@@ -212,6 +212,9 @@ main:focus{outline:none}
 const DEPTS=["Produce","Meat & Seafood","Bakery","Deli","Dairy & Eggs","Pantry","Prepared Meals"];
 const TINT={"Produce":"#e6f3df","Meat & Seafood":"#f8e3df","Bakery":"#f6ead6","Deli":"#f3e6ec","Dairy & Eggs":"#e4eef6","Pantry":"#efe9dd","Prepared Meals":"#e9e6f4"};
 // id,name,dept,emoji,size,price,was,per(kg if weighted),stock,tags,local,pop,new,brand,nutrition,allergens,origin,desc
+// GP-83: Ontario HST (13%) applies only to these products; all other groceries are zero-rated (CRA GST/HST Memorandum 4-3).
+// Keep in sync with "taxable" in data/prices.json: 31 Chicken Caesar Salad (salad), 33 Veggie Sushi Box (sushi), 46 Dark Chocolate Bar (confectionery).
+const TAXABLE=new Set([31,33,46]),HST_RATE=0.13,HST_ON_DELIVERY_FEE=true;
 const P=[
 ["Honeycrisp Apples","Produce","🍎","per lb (approx. 0.5 lb each)",2.99,3.49,"lb",48,["organic"],1,98,0,"FreshMarket Farms","Ontario","Crisp, juicy and sweet. Picked in Norfolk County this fall.",{cal:95,fat:"0.3 g",carb:"25 g",prot:"0.5 g",sod:"2 mg"},"None"],
 ["Bananas","Produce","🍌","per lb",0.79,null,"lb",120,["vegan","gluten-free"],0,99,0,"FreshMarket","Ecuador","Ripen at room temperature. Perfect for smoothies and baking.",{cal:105,fat:"0.4 g",carb:"27 g",prot:"1.3 g",sod:"1 mg"},"None"],
@@ -263,7 +266,7 @@ const P=[
 ["Rolled Oats","Pantry","🌾","1 kg",4.49,null,null,40,["vegan"],0,39,0,"Quaker","Canada","Large flake, cooks in 5 minutes.",{cal:150,fat:"3 g",carb:"27 g",prot:"5 g",sod:"0 mg"},"May contain wheat"],
 ["Red Lentil Soup","Prepared Meals","🍲","500 mL",6.99,null,null,13,["vegan","gluten-free"],1,37,1,"FreshMarket Kitchen","Ontario","Red lentils, cumin and lemon. Heat and serve.",{cal:260,fat:"6 g",carb:"38 g",prot:"14 g",sod:"720 mg"},"None"],
 ["Beef Lasagna","Prepared Meals","🍝","1 kg, serves 4",13.49,null,null,8,[],1,43,0,"FreshMarket Kitchen","Ontario","Layered with ricotta and slow-cooked beef ragù.",{cal:410,fat:"19 g",carb:"35 g",prot:"24 g",sod:"880 mg"},"Wheat, Milk, Egg"],
-].map((r,i)=>({id:i+1,name:r[0],dept:r[1],emoji:r[2],size:r[3],price:r[4],was:r[5],per:r[6],stock:r[7],tags:r[8],local:!!r[9],pop:r[10],isNew:!!r[11],brand:r[12],origin:r[13],desc:r[14],nf:r[15],allergens:r[16]}));
+].map((r,i)=>({id:i+1,taxable:TAXABLE.has(i+1),name:r[0],dept:r[1],emoji:r[2],size:r[3],price:r[4],was:r[5],per:r[6],stock:r[7],tags:r[8],local:!!r[9],pop:r[10],isNew:!!r[11],brand:r[12],origin:r[13],desc:r[14],nf:r[15],allergens:r[16]}));
 window.FM_PRODUCTS=P;
 
 const STORES=[
@@ -331,7 +334,7 @@ let drawerOpen=false,openProduct=null;
 function renderCart(){
   const items=Object.entries(S.cart).map(([id,q])=>({p:P.find(x=>x.id==id),q})).filter(x=>x.p);
   const sub=items.reduce((a,x)=>a+x.p.price*x.q,0),saved=items.reduce((a,x)=>a+(x.p.was?(x.p.was-x.p.price)*x.q:0),0);
-  const fee=sub>=50||!sub?0:4.99,hst=sub*0.13*0.25; // groceries mostly zero-rated; demo estimate on taxable share
+  const fee=sub>=50||!sub?0:4.99,hst=hstOf(items,fee); // GP-83: 13% on taxable items and the delivery fee only
   $("layer").innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Your cart">
    <div class="dhead"><h2>Your cart</h2><button class="x" data-close aria-label="Close cart">×</button></div>
    <div class="lines">${items.length?items.map(({p,q})=>`<div class="line"><div class="mini" style="background:${TINT[p.dept]}">${p.emoji}</div>
@@ -484,9 +487,11 @@ async function stripePay(){const c=CO(),t=calc(c.mode),btn=document.querySelecto
 const CO=()=>S.co||(S.co={step:"fulfil",mode:"delivery",street:"",postal:"",zipOk:false,zipMsg:"",day:0,slot:null,held:null,pay:"card",card:{name:"",num:"",exp:"",cvc:""},err:""});
 const cartItems=()=>Object.entries(S.cart).map(([id,q])=>({p:P.find(x=>x.id==id),q})).filter(x=>x.p);
 function calc(mode){const items=cartItems();const sub=items.reduce((a,x)=>a+x.p.price*x.q,0),saved=items.reduce((a,x)=>a+(x.p.was?(x.p.was-x.p.price)*x.q:0),0);
-  const hst=sub*0.13*0.25,fee=mode==="pickup"||!sub||sub>=FREE_DELIVERY?0:DELIVERY_FEE,total=sub+hst+fee;
+  const fee=mode==="pickup"||!sub||sub>=FREE_DELIVERY?0:DELIVERY_FEE,hst=hstOf(items,fee),total=sub+hst+fee;
   return{items,sub,saved,hst,fee,total,weighted:items.some(x=>x.p.per)}}
 const r2=n=>Math.round(n*100)/100;
+// Same arithmetic as api/_pricing.js, so the server charge always matches what the shopper sees
+function hstOf(items,fee){return(items.reduce((a,x)=>a+(x.p.taxable?x.p.price*x.q:0),0)+(HST_ON_DELIVERY_FEE?fee:0))*HST_RATE}
 const dayStart=i=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate()+i)};
 const fmtDay=d=>d.toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"});
 const hh=h=>(h%12||12)+(h<12?" am":" pm");

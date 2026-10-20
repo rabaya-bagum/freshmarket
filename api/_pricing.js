@@ -5,7 +5,11 @@ const PRICES = require('../data/prices.json');
 const DELIVERY_FEE = 4.99;
 const FREE_DELIVERY = 50;
 const DELIVERY_MIN = 35;
-const HST_RATE = 0.13 * 0.25; // demo estimate: most groceries are zero-rated, so HST applies to about a quarter of the basket
+// GP-83: Ontario HST is 13%, charged only on taxable products. Most groceries are zero-rated (CRA GST/HST Memorandum 4-3);
+// taxable ones (salads, sushi, chocolate bars) carry "taxable": true in data/prices.json.
+const HST_RATE = 0.13;
+// The delivery fee is a separate itemized charge, so HST is collected on it. Set to false if your accountant advises otherwise.
+const HST_ON_DELIVERY_FEE = true;
 const WEIGHTED_HOLD = 1.1; // pre-authorize 10% extra when items are sold by weight
 
 const byId = new Map(PRICES.map((p) => [p.id, p]));
@@ -22,12 +26,14 @@ function priceOrder(order) {
   if (order.mode !== 'delivery' && order.mode !== 'pickup') throw new PricingError('Choose delivery or pickup.');
 
   let subtotal = 0;
+  let taxableSubtotal = 0;
   let weighted = false;
   for (const { id, q } of order.items) {
     const p = byId.get(id);
     if (!p) throw new PricingError(`Unknown product ${id}.`);
     if (!Number.isInteger(q) || q < 1 || q > 99) throw new PricingError(`Invalid quantity for ${p.name}.`);
     subtotal += p.price * q;
+    if (p.taxable) taxableSubtotal += p.price * q;
     if (p.per) weighted = true;
   }
 
@@ -37,8 +43,8 @@ function priceOrder(order) {
     throw new PricingError(`Delivery needs a minimum order of $${DELIVERY_MIN.toFixed(2)}.`);
   }
   // Same arithmetic and rounding as the checkout page, so the charge always matches what the shopper saw
-  const hstRaw = subtotal * HST_RATE;
   const fee = order.mode === 'pickup' || subtotal >= FREE_DELIVERY ? 0 : DELIVERY_FEE;
+  const hstRaw = (taxableSubtotal + (HST_ON_DELIVERY_FEE ? fee : 0)) * HST_RATE;
   const totalRaw = subtotal + hstRaw + fee;
   const hst = r2(hstRaw);
   const total = r2(totalRaw);
@@ -56,4 +62,4 @@ function priceOrder(order) {
   };
 }
 
-module.exports = { priceOrder, PricingError };
+module.exports = { priceOrder, PricingError, HST_RATE, HST_ON_DELIVERY_FEE };

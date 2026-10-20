@@ -142,7 +142,7 @@ test.describe('GP-6 Choose pickup or delivery time slot', () => {
     await expect(co.locator('.pick')).toContainText('FreshMarket Square One');
     await expect(co.locator('.pick')).toContainText('100 City Centre Dr, Mississauga, ON L5B 2C9');
     await expect(co.locator('#co-min')).toHaveCount(0);
-    await expect(co.locator('.cofoot')).toContainText('Estimated total $5.67');
+    await expect(co.locator('.cofoot')).toContainText('Estimated total $5.49');
   });
 
   test('requires address, postal check and a time before payment', async ({ store }) => {
@@ -179,10 +179,10 @@ test.describe('GP-7 Secure checkout and payment', () => {
     await expect(co.locator('.items li')).toHaveText([/Extra Virgin Olive Oil × 3\s*\$41\.97/]);
     const totals = co.locator('.co-totals');
     await expect(totals).toContainText('Subtotal$41.97');
-    await expect(totals).toContainText('HST$1.36');
+    await expect(totals).toContainText('HST$0.65');
     await expect(totals).toContainText('Delivery fee$4.99');
-    await expect(totals.locator('.grand')).toHaveText('Total$48.32');
-    await expect(co.getByRole('button', { name: /^Place order/ })).toHaveText('Place order · $48.32');
+    await expect(totals.locator('.grand')).toHaveText('Total$47.61');
+    await expect(co.getByRole('button', { name: /^Place order/ })).toHaveText('Place order · $47.61');
   });
 
   test('approves a valid card and places the order', async ({ store }) => {
@@ -233,10 +233,10 @@ test.describe('GP-7 Secure checkout and payment', () => {
 
   test('pre-authorizes extra for items sold by weight', async ({ store }) => {
     const co = await toPayment(store, [['Pantry', 'Extra Virgin Olive Oil', 3], ['Meat & Seafood', 'Chicken Breasts', 1]]);
-    // total = 41.97 + 7.99 = 49.96 subtotal, HST 1.62, delivery 4.99 → 56.57; hold 110% → 62.23
-    await expect(co.locator('.grand')).toHaveText('Total$56.57');
+    // subtotal 41.97 + 7.99 = 49.96, all zero-rated; HST 13% on the $4.99 delivery fee = 0.65 → 55.60; hold 110% → 61.16
+    await expect(co.locator('.grand')).toHaveText('Total$55.60');
     await expect(co.locator('#co-preauth')).toHaveText(
-      "Some items are sold by weight. We'll pre-authorize $62.23 and charge the actual amount when your order is picked."
+      "Some items are sold by weight. We'll pre-authorize $61.16 and charge the actual amount when your order is picked."
     );
   });
 
@@ -279,7 +279,7 @@ test.describe('GP-8 Order confirmation, tracking and history', () => {
     await expect(done.getByRole('heading')).toHaveText('Order FM-1001 confirmed');
     await expect(done).toContainText('We emailed a confirmation to demo@freshmarket.ca.');
     await expect(done.locator('.items li')).toHaveText([/Extra Virgin Olive Oil × 3\s*\$41\.97/]);
-    await expect(done.locator('.grand')).toHaveText('Total$48.32');
+    await expect(done.locator('.grand')).toHaveText('Total$47.61');
     await expect(done.locator('[aria-current="step"]').first()).toHaveText('Confirmed');
   });
 
@@ -316,7 +316,7 @@ test.describe('GP-8 Order confirmation, tracking and history', () => {
     const list = page.getByRole('dialog', { name: 'Your orders' }).locator('.orders li');
     await expect(list).toHaveCount(1);
     await expect(list.first()).toContainText('FM-1001');
-    await expect(list.first()).toContainText('3 items · $48.32');
+    await expect(list.first()).toContainText('3 items · $47.61');
     await expect(list.first().locator('.pill')).toHaveText('Placed');
   });
 
@@ -334,7 +334,7 @@ test.describe('GP-8 Order confirmation, tracking and history', () => {
     const receipt = page.getByRole('dialog', { name: 'Order FM-1001' });
     await expect(receipt.getByRole('heading')).toHaveText('Order FM-1001');
     await expect(receipt).toContainText('Placed Oct 14, 2026');
-    await expect(receipt.locator('.grand')).toHaveText('Total$48.32');
+    await expect(receipt.locator('.grand')).toHaveText('Total$47.61');
   });
 
   test('Reorder adds a past order back to the cart', async ({ store, page }) => {

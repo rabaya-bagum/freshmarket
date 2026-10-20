@@ -39,11 +39,11 @@ test.describe('Smoke', () => {
     const config = await (await request.get('/api/config')).json();
     // Safety stop: this check creates a PaymentIntent, so it must never run against live keys
     expect(config.testMode, 'refusing to create a payment on live Stripe keys').toBe(true);
-    // Extra Virgin Olive Oil (id 25) × 3 for pickup: $41.97 + HST $1.36 = $43.33
+    // Extra Virgin Olive Oil (id 25) × 3 for pickup: $41.97, zero-rated, so no HST
     const res = await request.post('/api/create-payment-intent', { data: { mode: 'pickup', items: [{ id: 25, q: 3 }] } });
     const body = await res.json();
     expect(res.status(), `server said: ${body.error}`).toBe(200);
-    expect(body).toMatchObject({ amountCents: 4333, total: 43.33, captureMethod: 'automatic' });
+    expect(body).toMatchObject({ amountCents: 4197, total: 41.97, captureMethod: 'automatic' });
     expect(body.clientSecret).toMatch(/^pi_[A-Za-z0-9]+_secret_[A-Za-z0-9]+$/);
   });
 
