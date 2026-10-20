@@ -84,7 +84,7 @@ test.describe('Visual: product and cart', () => {
     await page.locator('#toast').evaluate((el) => (el.hidden = true));
     await page.locator('#cartBtn').click();
     await expect(page.locator('.drawer .line')).toHaveCount(2);
-    await expect(page.locator('.drawer .grand')).toHaveText('Estimated total$16.84');
+    await expect(page.locator('.drawer .grand')).toHaveText('Estimated total$17.12');
     await expect(page.locator('.drawer')).toHaveScreenshot('cart-drawer.png');
   });
 

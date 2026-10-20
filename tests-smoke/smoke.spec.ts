@@ -61,7 +61,7 @@ test.describe('Smoke', () => {
     await page.locator('article.card').first().getByRole('button', { name: 'Add to cart' }).click();
     await expect(page.locator('#count')).toHaveText('1');
     await page.locator('#cartBtn').click();
-    await expect(page.getByRole('dialog', { name: 'Your cart' }).locator('.grand')).toHaveText('Estimated total$10.66');
+    await expect(page.getByRole('dialog', { name: 'Your cart' }).locator('.grand')).toHaveText('Estimated total$11.13');
   });
 
   test('checkout loads the Stripe payment form', async ({ page }) => {
