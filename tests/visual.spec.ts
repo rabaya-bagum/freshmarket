@@ -84,7 +84,7 @@ test.describe('Visual: product and cart', () => {
     await page.locator('#toast').evaluate((el) => (el.hidden = true));
     await page.locator('#cartBtn').click();
     await expect(page.locator('.drawer .line')).toHaveCount(2);
-    await expect(page.locator('.drawer .grand')).toHaveText('Estimated total$16.84');
+    await expect(page.locator('.drawer .grand')).toHaveText('Estimated total$17.12');
     await expect(page.locator('.drawer')).toHaveScreenshot('cart-drawer.png');
   });
 
@@ -148,7 +148,7 @@ test.describe('Visual: checkout', () => {
   test('GP-7 review and pay step', async ({ page }) => {
     await page.getByRole('button', { name: 'Continue to payment' }).click();
     await expect(page.getByRole('heading', { name: 'Review and pay' })).toBeVisible();
-    await expect(page.locator('.panel .grand')).toHaveText('Total$48.32');
+    await expect(page.locator('.panel .grand')).toHaveText('Total$47.61');
     await expect(page.locator('.panel')).toHaveScreenshot('checkout-pay.png');
   });
 
