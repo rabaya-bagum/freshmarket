@@ -35,6 +35,48 @@ test.describe('GP-1 Account registration & login', () => {
     await expect(page.locator('#acct')).toHaveText('Sign in');
   });
 
+  // GP-81: an empty or incomplete form must never sign anyone in
+  test('empty sign-in form asks for the email and stays signed out', async ({ page }) => {
+    await form(page).getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('alert')).toHaveText('Enter your email address.');
+    await expect(page.getByLabel('Email')).toBeFocused();
+    await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByRole('dialog', { name: 'Sign in' })).toBeVisible();
+    await expect(page.locator('#acct')).toHaveText('Sign in');
+  });
+
+  test('email without a password asks for the password', async ({ page }) => {
+    await signIn(page, 'demo@freshmarket.ca', '');
+    await expect(page.getByRole('alert')).toHaveText('Enter your password.');
+    await expect(page.getByLabel('Password')).toBeFocused();
+    await expect(page.getByLabel('Email')).toHaveValue('demo@freshmarket.ca');
+    await expect(page.locator('#acct')).toHaveText('Sign in');
+  });
+
+  test('rejects a badly formatted email before checking the password', async ({ page }) => {
+    await signIn(page, 'demo-at-freshmarket', 'Fresh123');
+    await expect(page.getByRole('alert')).toHaveText('Enter a valid email address, like name@example.com.');
+    await expect(page.locator('#acct')).toHaveText('Sign in');
+  });
+
+  test('a blank email with the demo password does not sign in', async ({ page }) => {
+    await signIn(page, '   ', 'Fresh123');
+    await expect(page.getByRole('alert')).toHaveText('Enter your email address.');
+    await expect(page.locator('#acct')).toHaveText('Sign in');
+  });
+
+  test('empty sign-in from checkout stays signed out', async ({ page }) => {
+    await page.keyboard.press('Escape');
+    await page.locator('#depts button', { hasText: 'Bakery' }).click();
+    await page.locator('.card', { hasText: 'Sourdough Loaf' }).getByRole('button', { name: 'Add to cart' }).click();
+    await page.locator('#cartBtn').click();
+    await page.getByRole('button', { name: 'Continue to checkout' }).click();
+    await form(page).getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('alert')).toHaveText('Enter your email address.');
+    await expect(page.locator('#acct')).toHaveText('Sign in');
+    await expect(page.getByRole('dialog', { name: 'Checkout' })).toHaveCount(0);
+  });
+
   test('shows a clear error for a wrong password', async ({ page }) => {
     await signIn(page, 'demo@freshmarket.ca', 'wrong-pass');
     await expect(page.locator('.err')).toHaveText(
