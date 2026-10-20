@@ -370,13 +370,13 @@ function renderProduct(id){const p=P.find(x=>x.id==id);openProduct=id;
    </div></div></div></div>`}
 
 // ---- account dialog
-let authMode="in",authMsg="";
+let authMode="in",authMsg="",authBad=""; // authBad: id of the field to flag as invalid
 function renderAuth(){
   if(S.user){$("layer").innerHTML=`<div class="scrim" data-close></div><div class="modal" data-close><div class="panel auth" role="dialog" aria-modal="true" aria-label="Account"><button class="x" data-close aria-label="Close">×</button>
    <h2>Hi, ${esc(S.user.name)}</h2><p class="sub">${esc(S.user.email)}</p><p>Your cart is saved to your account.</p><div class="cofoot" style="justify-content:flex-start"><button class="ghost" data-orders>Your orders${S.orders?.length?` (${S.orders.length})`:""}</button><button class="ghost" data-logout>Sign out</button></div></div></div>`;return}
   const t=(m,l)=>`<button role="tab" data-mode="${m}" aria-selected="${authMode===m}">${l}</button>`;
   let body="";
-  if(authMode==="in")body=`<form data-form="in"><label>Email<input id="em" type="email" required autocomplete="email"></label><label>Password<input id="pw" type="password" required autocomplete="current-password"></label>
+  if(authMode==="in")body=`<form data-form="in" novalidate><label>Email<input id="em" type="email" required autocomplete="email"${authBad==="em"?' aria-invalid="true" aria-describedby="auth-err"':""}></label><label>Password<input id="pw" type="password" required autocomplete="current-password"${authBad==="pw"?' aria-invalid="true" aria-describedby="auth-err"':""}></label>
     <button class="link" type="button" data-mode="reset">Forgot password?</button><button class="checkout" type="submit">Sign in</button></form>`;
   if(authMode==="up")body=`<form data-form="up"><label>Full name<input id="nm" required autocomplete="name"></label><label>Email<input id="em" type="email" required autocomplete="email"></label><label>Password<input id="pw" type="password" required minlength="8" autocomplete="new-password"></label>
     <div class="note">At least 8 characters with a number.</div><button class="checkout" type="submit">Create account</button></form>`;
@@ -388,7 +388,7 @@ function renderAuth(){
    ${authMode!=="reset"?`<button class="google" data-google style="width:100%;margin-top:12px">Continue with Google</button>`:""}
    <p class="note">Demo account: demo@freshmarket.ca / Fresh123</p></div></div>`}
 
-function signIn(u,email){S.user={...u,email};S.orders=loadOrders();authMsg="";closeLayer();toast(`Signed in. Your cart is saved.`);render()}
+function signIn(u,email){S.user={...u,email};S.orders=loadOrders();authMsg="";authBad="";closeLayer();toast(`Signed in. Your cart is saved.`);render()}
 
 function closeLayer(){$("layer").innerHTML="";drawerOpen=false;openProduct=null;coOpen=false}
 
@@ -403,16 +403,16 @@ document.addEventListener("click",e=>{const t=e.target.closest("button,[data-clo
   if(d.dec){setQty(d.dec,(S.cart[d.dec]||0)-1);return}
   if(d.rm){setQty(d.rm,0);return}
   if(d.open){renderProduct(d.open);return}
-  if(d.mode){authMode=d.mode;authMsg="";renderAuth();return}
+  if(d.mode){authMode=d.mode;authMsg="";authBad="";renderAuth();return}
   if(d.google!==undefined){signIn({name:"Google Shopper"},"shopper@gmail.com");return}
   if(d.logout!==undefined){S.user=null;S.orders=[];closeLayer();toast("Signed out");render();return}
-  if(d.checkout!==undefined){if(!S.user){authMode="in";authMsg=`<p class="note">Sign in to continue to checkout.</p>`;drawerOpen=false;renderAuth()}else openCheckout();return}
+  if(d.checkout!==undefined){if(!S.user){authMode="in";authBad="";authMsg=`<p class="note">Sign in to continue to checkout.</p>`;drawerOpen=false;renderAuth()}else openCheckout();return}
 });
 $("home").onclick=()=>{S.dept=null;S.q="";$("q").value="";S.tags.clear();S.local=false;render()};
 $("more").onclick=()=>{S.shown+=12;render()};
 $("sort").onchange=e=>{S.sort=e.target.value;render()};
 $("cartBtn").onclick=()=>{drawerOpen=true;openProduct=null;renderCart()};
-$("acct").onclick=()=>{authMsg="";renderAuth()};
+$("acct").onclick=()=>{authMsg="";authBad="";renderAuth()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLayer()});
 // ---- keyboard focus for dialogs (open: focus moves in · Tab stays inside · close: focus returns)
 const FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -433,7 +433,11 @@ document.addEventListener("keydown",e=>{if(e.key!=="Tab")return;const dlg=$("lay
   if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
 
 document.addEventListener("submit",e=>{e.preventDefault();if(e.target.dataset.form==="pay"){placeOrder();return}const f=e.target.dataset.form,em=($("em")?.value||"").trim().toLowerCase(),pw=$("pw")?.value||"";
-  if(f==="in"){const u=S.users[em];
+  if(f==="in"){
+    // GP-81: never look up an account unless both fields are filled in and the email looks valid
+    const need=!em?["em","Enter your email address."]:!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)?["em","Enter a valid email address, like name@example.com."]:!pw?["pw","Enter your password."]:null;
+    if(need){authBad=need[0];authMsg=`<p class="err" id="auth-err" role="alert">${need[1]}</p>`;const keep=$("em")?.value||"";renderAuth();$("em").value=keep;$(need[0]).focus();return}
+    authBad="";const u=S.users[em];
     if(u&&u.fails>=5){authMsg=`<p class="err" role="alert">This account is locked after 5 failed attempts. Reset your password to unlock it.</p>`;return renderAuth()}
     if(!u||u.pw!==pw){if(u)u.fails++;const left=u?5-u.fails:null;authMsg=`<p class="err" role="alert">That email and password don't match.${u&&left>0?` ${left} attempt${left===1?"":"s"} left before the account locks.`:""}</p>`;return renderAuth()}
     if(!u.verified){authMsg=`<p class="err" role="alert">Verify your email first. We sent a link to ${esc(em)}.</p>`;u.verified=true;return renderAuth()}
