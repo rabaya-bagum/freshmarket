@@ -10,6 +10,8 @@ import Checkout, { newCheckout } from './Checkout';
 
 const SORTS = { pop: (a, b) => b.pop - a.pop, new: (a, b) => b.isNew - a.isNew || b.pop - a.pop, low: (a, b) => a.price - b.price, high: (a, b) => b.price - a.price };
 const TAGS = ['organic', 'gluten-free', 'vegan'];
+// A plain-English presentation of how the store works, linked from the demo banner
+const HOW_IT_WORKS = 'https://claude.ai/artifact/Hxxzggva5PS6u66tyBgJeh';
 
 function initialStore() {
   const st = +local.get('fm-store', 0);
@@ -249,7 +251,7 @@ export default function App() {
   return (
     <>
       <a className="skip" href="#main">Skip to products</a>
-      <div className="demo">Demo store · sample products and prices · no real orders or payments</div>
+      <div className="demo">Demo store · sample products and prices · no real orders or payments · <a href={HOW_IT_WORKS} target="_blank" rel="noopener noreferrer">How this store works</a></div>
       <header>
         <div className="wrap">
           <div className="bar">

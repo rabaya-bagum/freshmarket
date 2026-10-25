@@ -118,6 +118,8 @@ label input{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;b
 .skip:focus{top:0}
 main:focus{outline:none}
 .demo{background:var(--sale);color:var(--sale-ink);text-align:center;font-size:12px;font-weight:700;padding:5px 16px;letter-spacing:.02em}
+.demo a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.demo a:focus-visible{outline-color:var(--sale-ink)}
 .co{width:min(720px,100%)}
 .payel{min-height:120px;margin:4px 0 10px}
 .co .steps{padding-right:36px}
