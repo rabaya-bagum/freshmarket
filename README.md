@@ -66,6 +66,7 @@ The browser only sends product IDs and quantities, so nobody can change what the
 | `PUT /api/cart` | Saves the signed-in shopper's cart |
 | `POST /api/orders` | Places an order |
 | `POST /api/orders/:number/advance` | Demo control: moves an order to its next status |
+| `GET /api/debug/crash` | Your own computer only: a deliberate bug, answered with a `500` and its stack trace (see below) |
 
 Each product has everything the store shows: name, department, size, price, sale price (`was`), unit for items sold by weight (`per`), tags, nutrition, allergens, and `stock` as one number per store. Product responses are cached for 60 seconds. Changes must be sent as JSON, which blocks forged requests from other sites.
 
@@ -88,6 +89,8 @@ npm start          # serves dist/ and the API at http://localhost:3000
 Without `DATABASE_URL`, the server uses PGlite, a Postgres that runs inside Node with nothing to install. Its data is kept in memory and is lost when the server stops. To keep it, set `DATA_DIR`, for example `DATA_DIR=.data npm start` (`.data/` is git-ignored).
 
 Demo login: `demo@freshmarket.ca` / `Fresh123`. The demo account is created automatically.
+
+**Seeing a server error.** On your own computer, any unexpected error answers `500` with its `type`, `message` and `stack` (the chain of function calls that led to it, the line that broke first). Open http://localhost:3000/api/debug/crash to see one: it reads a property of `undefined` on purpose. The same trace is printed in the terminal running the server. On the live site (`NODE_ENV=production`) the endpoint doesn't exist and errors say only "Something went wrong", because a stack trace shows file paths and code to anyone who asks. There, the trace goes only to Vercel's logs.
 
 Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. Use any future expiry and any 3-digit code.
 
@@ -176,7 +179,7 @@ If Vercel Deployment Protection is on for previews, create a **Protection Bypass
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the server: 164 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (360 checks). They run against the real server with a fresh in-memory database. Every test's browser gets its own private accounts, carts and orders (`FM_SANDBOX=1`, test runs only), so tests running side by side never see each other's data. The server has 72 more unit tests.
+Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the server: 164 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (360 checks). They run against the real server with a fresh in-memory database. Every test's browser gets its own private accounts, carts and orders (`FM_SANDBOX=1`, test runs only), so tests running side by side never see each other's data. The server has 76 more unit tests.
 
 | File | Story |
 |------|-------|
@@ -193,6 +196,7 @@ Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loadi
 | `api-tests/products.test.js` | Products API: paging, defaults, bad input, unknown ids (and the `500` for ids that aren't numbers), GET only |
 | `api-tests/accounts.test.js` | Sign-in, sessions, lockout and reset, sign-up and verification, password hashing, saved carts, placing orders (pricing, stock, delivery area), order status, Stripe payment checks, and sandbox isolation |
 | `api-tests/catalog.test.js` | The catalog in the database: a new database is filled once from `data/`, `/api/stores`, and a price, stock or product changed in the tables shows in the API and in orders |
+| `api-tests/errors.test.js` | Unexpected errors: a `500` with its stack trace on your own computer, and with no details at all on the live site |
 | `tests/accessibility.spec.ts` | Accessibility: every screen scanned with axe-core against WCAG 2.1 AA in light and dark mode, plus keyboard-only shopping, focus handling, announcements and 200% zoom |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 

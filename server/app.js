@@ -396,6 +396,14 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
     res.json({ order, statusName: STATUS[order.mode][order.status] });
   }));
 
+  // ---- learning aid, on your own computer only: a real bug on purpose, to see a 500 and its stack trace
+  if (!secure) {
+    api.get('/debug/crash', () => {
+      const order = undefined;
+      return order.total; // TypeError: Cannot read properties of undefined (reading 'total')
+    });
+  }
+
   api.use((req, res) => res.status(404).json({ error: 'Not found.' }));
   // Express treats a handler with four arguments as the error handler, so `next` must stay
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -403,7 +411,11 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
     if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') return res.status(400).json({ error: 'The order could not be read.' });
     console.error(err);
-    res.status(500).json({ error: 'Something went wrong on our side. Try again in a moment.' });
+    const body = { error: 'Something went wrong on our side. Try again in a moment.' };
+    // On your own computer the answer also carries the error and where it happened. Never on the live
+    // site (NODE_ENV=production): a stack trace shows file paths and code to anyone who asks.
+    if (!secure) Object.assign(body, { type: err.name, message: err.message, stack: String(err.stack || '').split('\n').map((line) => line.trim()) });
+    res.status(500).json(body);
   });
 
   return app;
