@@ -71,6 +71,11 @@ test.describe('Smoke', () => {
     await page.getByLabel('Password').fill('Fresh123');
     await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
     await expect(page.locator('#acct')).toHaveText('Hi, Demo');
+    // The demo account's cart is saved in the database, so earlier runs may have left items in it: start empty
+    expect((await page.request.put('/api/cart', { data: { items: {} } })).status()).toBe(200);
+    await page.evaluate(() => localStorage.removeItem('fm-cart'));
+    await page.reload();
+    await expect(page.locator('#count')).toHaveText('0');
 
     await page.locator('#depts button', { hasText: 'Bakery' }).click();
     await page.locator('article.card').filter({ hasText: 'Sourdough Loaf' }).getByRole('button', { name: 'Add to cart' }).click();
