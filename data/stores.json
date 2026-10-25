@@ -1,0 +1,41 @@
+[
+ {
+  "name": "Square One",
+  "city": "Mississauga",
+  "addr": "100 City Centre Dr, Mississauga, ON L5B 2C9",
+  "close": "10 pm",
+  "areas": [
+   "L4Z",
+   "L5A",
+   "L5B",
+   "L5C",
+   "L5M",
+   "L5R"
+  ]
+ },
+ {
+  "name": "Oakville Place",
+  "city": "Oakville",
+  "addr": "240 Leighland Ave, Oakville, ON L6H 3H6",
+  "close": "9 pm",
+  "areas": [
+   "L6H",
+   "L6J",
+   "L6K",
+   "L6L",
+   "L6M"
+  ]
+ },
+ {
+  "name": "Liberty Village",
+  "city": "Toronto",
+  "addr": "85 Hanna Ave, Toronto, ON M6K 3S3",
+  "close": "11 pm",
+  "areas": [
+   "M5A",
+   "M5V",
+   "M6J",
+   "M6K"
+  ]
+ }
+]

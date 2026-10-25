@@ -4,7 +4,7 @@ Demo storefront for FreshMarket, a fresh-food grocery platform. Tracked in Jira 
 
 Live site (Stripe test mode): https://freshmarket-gules.vercel.app
 
-Claude demo (demo payments only): https://claude.ai/artifact/Vubfe2xakH4KaGGF5Q8yyG
+The store is a **React** app (built with Vite) backed by a **Node.js** server (Express) and a **Postgres** database.
 
 ## What's in this version
 
@@ -21,68 +21,118 @@ Claude demo (demo payments only): https://claude.ai/artifact/Vubfe2xakH4KaGGF5Q8
 
 Sample data: 50 products across 7 departments, and 3 stores (Square One, Oakville Place, Liberty Village), each with its own stock, hours and delivery area.
 
+## How it is built
+
+```
+Browser (React)  ──/api──►  Node server (Express)  ──►  Postgres
+ src/                        server/                     accounts, carts, orders
+                             data/products.json          (PGlite locally, e.g. Neon in production)
+                             data/stores.json
+                             Stripe (payments)
+```
+
+| Folder / file | Job |
+|---------------|-----|
+| `src/` | The React store: `App.jsx` (header, departments, filters, grid), `Dialogs.jsx` (cart, product, account, orders), `Checkout.jsx` (time slots and payment), `lib.js` (search, totals, slots), `focus.js` (keyboard focus in dialogs) |
+| `server/app.js` | Every `/api` endpoint (listed below) |
+| `server/pricing.js` | Prices, HST, delivery fee, minimum order and the 110% hold for items sold by weight |
+| `server/catalog.js` | Products and stores, and stock for each store |
+| `server/db.js` | The database tables, and the connection: Postgres when `DATABASE_URL` is set, otherwise PGlite |
+| `server/security.js` | Password hashing (scrypt) and signed session cookies |
+| `server/index.js` | Runs the whole app on your computer |
+| `api/index.js` | Runs the server on Vercel |
+| `data/products.json`, `data/stores.json` | The catalog and stores. This is the only copy: the store page loads products from the server |
+
+What the server keeps:
+
+- **Accounts.** Passwords are stored as salted scrypt hashes, never as text. Signing in sets a session cookie that is signed by the server and hidden from page scripts (`HttpOnly`), and it lasts 30 days. After 5 wrong passwords the account locks until the password is reset, or for 15 minutes.
+- **Carts.** While you are signed in, your cart is saved to your account, so it follows you to other devices. Anything you added before signing in joins the saved cart. A guest cart stays in the browser.
+- **Orders.** The server prices every order itself, checks the store has the stock and delivers to that postal code, and numbers it (FM-1001, FM-1002, …).
+
+The browser only sends product IDs and quantities, so nobody can change what they pay.
+
+### API
+
+| Endpoint | Does |
+|----------|------|
+| `GET /api/products?page=1&per_page=10` | One page of products (maximum 50 per page), with `page`, `per_page`, `total` and `total_pages` |
+| `GET /api/products/:id` | One product. An id that is not a whole number (e.g. `/api/products/a`) gets a `500` server error; an unknown id gets `404` |
+| `GET /api/config` | Whether Stripe is on. Shares only the publishable key |
+| `POST /api/create-payment-intent` | Prices the order and creates the Stripe payment |
+| `GET /api/session` | The signed-in shopper, their saved cart and their orders |
+| `POST /api/auth/signin`, `/signup`, `/reset`, `/google`, `/signout` | Accounts. `google` is a demo stand-in that signs in a sample shopper |
+| `PUT /api/cart` | Saves the signed-in shopper's cart |
+| `POST /api/orders` | Places an order |
+| `POST /api/orders/:number/advance` | Demo control: moves an order to its next status |
+
+Each product has everything the store shows: name, department, size, price, sale price (`was`), unit for items sold by weight (`per`), tags, nutrition, allergens, and `stock` as one number per store. Product responses are cached for 60 seconds. Changes must be sent as JSON, which blocks forged requests from other sites.
+
+## Run it
+
+You need Node.js 20 or newer.
+
+```bash
+npm install
+npm run dev        # the store with live reload, at http://localhost:3000
+```
+
+Or run it the way production does:
+
+```bash
+npm run build      # builds the React store into dist/
+npm start          # serves dist/ and the API at http://localhost:3000
+```
+
+Without `DATABASE_URL`, the server uses PGlite, a Postgres that runs inside Node with nothing to install. Its data is kept in memory and is lost when the server stops. To keep it, set `DATA_DIR`, for example `DATA_DIR=.data npm start` (`.data/` is git-ignored).
+
+Demo login: `demo@freshmarket.ca` / `Fresh123`. The demo account is created automatically.
+
+Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. Use any future expiry and any 3-digit code.
+
+Settings (environment variables):
+
+| Variable | Needed | What it is |
+|----------|--------|------------|
+| `DATABASE_URL` | In production | A Postgres connection string, e.g. from Neon |
+| `SESSION_SECRET` | In production | A long random string that signs session cookies. Without it, everyone is signed out whenever the server restarts |
+| `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY` | For real payments | See below |
+| `PORT` | No | Port for `npm start` / `npm run dev` (default 3000) |
+| `DATA_DIR` | No | Folder for the local PGlite database |
+
+## Deploy on Vercel
+
+Vercel builds the React store (`npm run build`) and runs the server as one function (`api/index.js`). `vercel.json` has the settings.
+
+1. **Database.** In Vercel, open **Storage → Create Database → Neon (Postgres)** (the free plan is enough) and connect it to this project. That adds `DATABASE_URL`. The tables are created automatically on first use.
+   Without a database the site still works, but accounts and orders are kept in the server's memory and disappear whenever Vercel restarts it.
+2. **Session secret.** In **Settings → Environment Variables**, add `SESSION_SECRET` with a long random value. One way to make one: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+3. **Stripe** (optional): see below.
+4. Redeploy.
+
+GitHub Pages and the Claude demo link can't run this version, because it needs the server. Turn GitHub Pages off in **Settings → Pages**.
+
 ## Real payments with Stripe
 
 The checkout works in two modes:
 
-- **Demo mode** (default): fake card form, no money moves. Used by the Claude demo link and GitHub Pages.
-- **Stripe mode**: Stripe's secure payment form (cards, Apple Pay, Google Pay). Switches on automatically when the site runs on Vercel with Stripe keys set.
+- **Demo mode** (default): fake card form, no money moves.
+- **Stripe mode**: Stripe's secure payment form (cards, Apple Pay, Google Pay). Switches on automatically when both Stripe keys are set.
 
-How it is built:
-
-| File | Job |
-|------|-----|
-| `api/config.js` | `GET /api/config` tells the page whether Stripe is on, and shares only the publishable key |
-| `api/create-payment-intent.js` | `POST /api/create-payment-intent` prices the order on the server and creates the Stripe payment |
-| `api/_pricing.js` | Server-side prices, HST, delivery fee, minimum order and the 110% hold for items sold by weight |
-| `data/prices.json` | The price list the server trusts. A test fails if it ever differs from the store page |
-
-The browser only sends product IDs and quantities. The server works out the amount, so nobody can change what they pay. Card numbers go straight to Stripe and never touch this code. Orders with items sold by weight are authorized now and captured later (`capture_method: manual`).
+In Stripe mode the server only accepts an order once Stripe confirms a payment for exactly that order's amount, and each payment can pay for only one order. Card numbers go straight to Stripe and never touch this code. Orders with items sold by weight are authorized now and captured later (`capture_method: manual`).
 
 ### Turn it on (test mode)
 
 1. Create a free Stripe account at https://dashboard.stripe.com/register and stay in **Test mode**.
 2. In Stripe, open **Developers → API keys** and copy the publishable key (`pk_test_…`) and secret key (`sk_test_…`).
-3. Import this repo at https://vercel.com/new (no build settings needed).
-4. In Vercel, open **Settings → Environment Variables** and add:
+3. In Vercel, open **Settings → Environment Variables** and add:
    - `STRIPE_PUBLISHABLE_KEY` = `pk_test_…`
    - `STRIPE_SECRET_KEY` = `sk_test_…`
-5. Redeploy. Checkout now shows Stripe's form. Pay with `4242 4242 4242 4242`, any future expiry, any 3 digits.
-6. See test payments in Stripe under **Payments**.
+4. Redeploy. Checkout now shows Stripe's form. Pay with `4242 4242 4242 4242`, any future expiry, any 3 digits.
+5. See test payments in Stripe under **Payments**.
 
 Never put the secret key in code, in the README, or in a chat. It belongs only in Vercel's environment variables.
 
 **Copy the whole key.** The Stripe dashboard shows keys shortened, like `pk_test_...JD7i`. That text is not the key. Use the copy button on **Developers → API keys** so you get the full value (about 100 characters). If a key is shortened or the two keys are from different modes, `/api/config` turns Stripe off, the checkout stays in demo mode, and the browser console says which key is wrong. After changing a key in Vercel, redeploy for it to take effect.
-
-## Products API
-
-Read-only endpoints that serve products from the same price list the payment server trusts (`data/prices.json`). They run as Vercel functions alongside the payment API.
-
-The store loads every page of `/api/products` when it opens, and uses those names and prices. A product's other details (department, size, stock, nutrition, allergens) are still built into `index.html`, and a product without a server entry keeps its built-in name and price. If the API is not there (opened as a file, GitHub Pages, the Claude demo) or sends something that is not a product list, the store uses its built-in prices. If a server price is not below a product's old price, the sale badge is hidden.
-
-| Endpoint | File | Returns |
-|----------|------|---------|
-| `GET /api/products?page=1&per_page=10` | `api/products/index.js` | One page of products, plus `page`, `per_page`, `total` and `total_pages` |
-| `GET /api/products/:id` | `api/products/[id].js` | One product as `{ "data": { … } }` |
-
-Each product looks like this:
-
-```json
-{ "id": 1, "name": "Honeycrisp Apples", "price": 2.99, "per": "lb", "sold_by_weight": true }
-```
-
-- `page` defaults to 1 and `per_page` to 10 (maximum 50). Both must be positive whole numbers, or the API answers `400`. A page past the end returns an empty `data` list, not an error.
-- An id that is not a whole number (for example `/api/products/a`) gets a `500` server error. An id with no product gets `404`.
-- Only `GET` is allowed. Other methods get `405`.
-- Responses are cached for 60 seconds (`Cache-Control: public, max-age=60`).
-
-## Run it
-
-Open `index.html` in a browser. No build step or server needed.
-
-Demo login: `demo@freshmarket.ca` / `Fresh123`
-
-Test cards: `4242 4242 4242 4242` approves, `4000 0000 0000 0002` is declined. Use any future expiry and any 3-digit code.
 
 ## Pipeline
 
@@ -124,7 +174,7 @@ If Vercel Deployment Protection is on for previews, create a **Protection Bypass
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the API: 165 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (362 checks). The server has 38 more unit tests: 29 for payments and 9 for the products API.
+Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the server: 164 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (360 checks). They run against the real server with a fresh in-memory database. Every test's browser gets its own private accounts, carts and orders (`FM_SANDBOX=1`, test runs only), so tests running side by side never see each other's data. The server has 65 more unit tests.
 
 | File | Story |
 |------|-------|
@@ -136,9 +186,10 @@ Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loadi
 | `tests/checkout.spec.ts` | GP-6 slots and delivery area, GP-7 payment and declines, GP-8 confirmation, tracking, history, reorder |
 | `tests/stores.spec.ts` | Store picker, per-store stock, cart re-check on store change |
 | `tests/stripe.spec.ts` | Stripe checkout with a stand-in Stripe.js: payment form, success, decline, server errors, price check, weighted-item hold, demo fallback |
-| `tests/products-api.spec.ts` | Store loads names and prices from `/api/products` with a stand-in API: prices on cards and in the cart, sale badge, paging, fallback when the API is down or sends a non-list reply |
-| `api-tests/payments.test.js` | Server pricing and payment endpoints, with a fake Stripe client |
-| `api-tests/products.test.js` | Products API: paging, defaults, bad input, unknown ids, GET only |
+| `tests/products-api.spec.ts` | Store loads its products from `/api/products` (with a stand-in API): names and prices on cards and in the cart, paging, and a clear message when the products can't load |
+| `api-tests/payments.test.js` | Pricing, `/api/create-payment-intent` and `/api/config`, with a fake Stripe client |
+| `api-tests/products.test.js` | Products API: paging, defaults, bad input, unknown ids (and the `500` for ids that aren't numbers), GET only |
+| `api-tests/accounts.test.js` | Sign-in, sessions, lockout and reset, sign-up and verification, password hashing, saved carts, placing orders (pricing, stock, delivery area), order status, Stripe payment checks, and sandbox isolation |
 | `tests/accessibility.spec.ts` | Accessibility: every screen scanned with axe-core against WCAG 2.1 AA in light and dark mode, plus keyboard-only shopping, focus handling, announcements and 200% zoom |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 
@@ -149,8 +200,8 @@ npm install
 npx playwright install chromium
 npm test
 npm run test:report   # open the HTML report
-npm run lint          # check every test has an assertion
-npm run test:api      # payment and products API unit tests
+npm run lint          # lint the app, the server and the tests (every test must have an assertion)
+npm run test:api      # server unit tests
 ```
 
 ### Visual tests
@@ -176,7 +227,7 @@ Stripe's card form is a third-party frame, so it is left out of the scan. A fail
 
 ## Demo limitations
 
-Sample products and prices only. Login, Google sign-in and the cart run in the browser with no backend; no real orders or payments.
+Sample products and prices only. No emails or text messages are sent (verification, password reset and status updates are simulated), "Continue with Google" signs in a sample shopper, and stock is not reduced when orders are placed. Without Stripe keys, no payments are taken.
 
 Checkout tests fix the clock to a Wednesday at 8 am Toronto time, so time slots are the same on every run.
 

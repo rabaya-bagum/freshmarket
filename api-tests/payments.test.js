@@ -1,32 +1,14 @@
-// Unit tests for the payment server code. Run with: npm run test:api
-const { test, describe, beforeEach } = require('node:test');
+// Unit tests for pricing and the payment endpoints. Run with: npm run test:api
+const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { priceOrder, PricingError } = require('../api/_pricing');
-const createIntent = require('../api/create-payment-intent');
-const config = require('../api/config');
-const PRICES = require('../data/prices.json');
+const { priceOrder, PricingError } = require('../server/pricing');
+const { PRODUCTS } = require('../server/catalog');
+const { startServer, fakeStripe, PK, SK } = require('./helpers');
 
-const id = (name) => PRICES.find((p) => p.name === name).id;
+const id = (name) => PRODUCTS.find((p) => p.name === name).id;
 const OIL = id('Extra Virgin Olive Oil'); // 13.99
 const SOURDOUGH = id('Sourdough Loaf'); // 5.49
 const CHICKEN = id('Chicken Breasts'); // 7.99 per lb
-
-function mockRes() {
-  const res = { statusCode: 200, headers: {}, body: undefined };
-  res.status = (c) => ((res.statusCode = c), res);
-  res.json = (b) => ((res.body = b), res);
-  res.setHeader = (k, v) => (res.headers[k] = v);
-  return res;
-}
-function fakeStripe() {
-  const calls = [];
-  return {
-    calls,
-    paymentIntents: {
-      create: async (args) => (calls.push(args), { id: 'pi_test_123', client_secret: 'pi_test_123_secret_abc' }),
-    },
-  };
-}
 
 describe('priceOrder', () => {
   test('delivery under $50 adds the $4.99 fee and estimated HST', () => {
@@ -35,6 +17,7 @@ describe('priceOrder', () => {
     assert.equal(r.hst, 1.36);
     assert.equal(r.fee, 4.99);
     assert.equal(r.total, 48.32);
+    assert.equal(r.saved, 6);
     assert.equal(r.amountCents, 4832);
     assert.equal(r.captureMethod, 'automatic');
   });
@@ -68,7 +51,7 @@ describe('priceOrder', () => {
   });
 
   test('matches the checkout page for every product (no rounding drift)', () => {
-    for (const p of PRICES) {
+    for (const p of PRODUCTS) {
       for (const q of [1, 2, 3, 7]) {
         const r = priceOrder({ mode: 'pickup', items: [{ id: p.id, q }] });
         const sub = p.price * q, total = sub + sub * 0.13 * 0.25;
@@ -98,127 +81,117 @@ describe('priceOrder', () => {
 });
 
 describe('POST /api/create-payment-intent', () => {
-  beforeEach(() => {
-    process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
-  });
+  let srv, b;
+  before(async () => { srv = await startServer({ env: { STRIPE_SECRET_KEY: SK, STRIPE_PUBLISHABLE_KEY: PK } }); b = srv.browser(); });
+  after(() => srv.close());
 
   test('creates a CAD PaymentIntent for the server-calculated amount', async () => {
-    const stripe = fakeStripe(), res = mockRes();
-    await createIntent.handler({ method: 'POST', body: { mode: 'delivery', items: [{ id: OIL, q: 3 }] } }, res, stripe);
-    assert.equal(res.statusCode, 200);
-    assert.deepEqual(res.body, { clientSecret: 'pi_test_123_secret_abc', amountCents: 4832, total: 48.32, captureMethod: 'automatic' });
-    assert.equal(stripe.calls.length, 1);
-    assert.equal(stripe.calls[0].amount, 4832);
-    assert.equal(stripe.calls[0].currency, 'cad');
-    assert.equal(stripe.calls[0].capture_method, 'automatic');
-    assert.deepEqual(stripe.calls[0].automatic_payment_methods, { enabled: true });
+    srv.stripe.calls.length = 0;
+    const r = await b.call('POST', '/create-payment-intent', { mode: 'delivery', items: [{ id: OIL, q: 3 }] });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.body, { clientSecret: 'pi_test_123_secret_abc', amountCents: 4832, total: 48.32, captureMethod: 'automatic' });
+    assert.equal(srv.stripe.calls.length, 1);
+    assert.equal(srv.stripe.calls[0].amount, 4832);
+    assert.equal(srv.stripe.calls[0].currency, 'cad');
+    assert.equal(srv.stripe.calls[0].capture_method, 'automatic');
+    assert.deepEqual(srv.stripe.calls[0].automatic_payment_methods, { enabled: true });
   });
 
   test('uses manual capture for weighted orders', async () => {
-    const stripe = fakeStripe(), res = mockRes();
-    await createIntent.handler({ method: 'POST', body: { mode: 'pickup', items: [{ id: CHICKEN, q: 2 }] } }, res, stripe);
-    assert.equal(res.statusCode, 200);
-    assert.equal(stripe.calls[0].capture_method, 'manual');
-  });
-
-  test('accepts a JSON string body', async () => {
-    const stripe = fakeStripe(), res = mockRes();
-    await createIntent.handler({ method: 'POST', body: JSON.stringify({ mode: 'pickup', items: [{ id: OIL, q: 1 }] }) }, res, stripe);
-    assert.equal(res.statusCode, 200);
+    srv.stripe.calls.length = 0;
+    const r = await b.call('POST', '/create-payment-intent', { mode: 'pickup', items: [{ id: CHICKEN, q: 2 }] });
+    assert.equal(r.status, 200);
+    assert.equal(srv.stripe.calls[0].capture_method, 'manual');
   });
 
   test('rejects an invalid order without calling Stripe', async () => {
-    const stripe = fakeStripe(), res = mockRes();
-    await createIntent.handler({ method: 'POST', body: { mode: 'delivery', items: [{ id: SOURDOUGH, q: 1 }] } }, res, stripe);
-    assert.equal(res.statusCode, 400);
-    assert.equal(res.body.error, 'Delivery needs a minimum order of $35.00.');
-    assert.equal(stripe.calls.length, 0);
+    srv.stripe.calls.length = 0;
+    const r = await b.call('POST', '/create-payment-intent', { mode: 'delivery', items: [{ id: SOURDOUGH, q: 1 }] });
+    assert.equal(r.status, 400);
+    assert.equal(r.body.error, 'Delivery needs a minimum order of $35.00.');
+    assert.equal(srv.stripe.calls.length, 0);
   });
 
   test('rejects unreadable JSON', async () => {
-    const res = mockRes();
-    await createIntent.handler({ method: 'POST', body: '{not json' }, res, fakeStripe());
-    assert.equal(res.statusCode, 400);
-    assert.equal(res.body.error, 'The order could not be read.');
+    const r = await b.call('POST', '/create-payment-intent', null, { raw: '{not json' });
+    assert.equal(r.status, 400);
+    assert.equal(r.body.error, 'The order could not be read.');
   });
 
   test('only accepts POST', async () => {
-    const res = mockRes();
-    await createIntent.handler({ method: 'GET' }, res, fakeStripe());
-    assert.equal(res.statusCode, 405);
-    assert.equal(res.headers.Allow, 'POST');
-  });
-
-  test('returns 503 when Stripe is not set up', async () => {
-    delete process.env.STRIPE_SECRET_KEY;
-    const res = mockRes();
-    await createIntent.handler({ method: 'POST', body: { mode: 'pickup', items: [{ id: OIL, q: 1 }] } }, res, fakeStripe());
-    assert.equal(res.statusCode, 503);
-    assert.equal(res.body.error, 'Online payments are not set up yet.');
+    const r = await b.call('GET', '/create-payment-intent');
+    assert.equal(r.status, 405);
+    assert.equal(r.headers.get('allow'), 'POST');
   });
 
   test('hides Stripe errors from the browser', async () => {
-    const res = mockRes();
     const broken = { paymentIntents: { create: async () => { throw new Error('Invalid API Key provided: sk_test_***'); } } };
+    const s2 = await startServer({ env: { STRIPE_SECRET_KEY: SK }, stripe: broken });
     const orig = console.error; console.error = () => {};
-    await createIntent.handler({ method: 'POST', body: { mode: 'pickup', items: [{ id: OIL, q: 1 }] } }, res, broken);
+    const r = await s2.browser().call('POST', '/create-payment-intent', { mode: 'pickup', items: [{ id: OIL, q: 1 }] });
     console.error = orig;
-    assert.equal(res.statusCode, 502);
-    assert.equal(res.body.error, 'The payment service is not responding. Try again in a moment.');
-    assert.ok(!JSON.stringify(res.body).includes('sk_test'));
+    await s2.close();
+    assert.equal(r.status, 502);
+    assert.equal(r.body.error, 'The payment service is not responding. Try again in a moment.');
+    assert.ok(!JSON.stringify(r.body).includes('sk_test'));
+  });
+
+  test('returns 503 when Stripe is not set up', async () => {
+    const s2 = await startServer({ env: {}, stripe: fakeStripe() });
+    const r = await s2.browser().call('POST', '/create-payment-intent', { mode: 'pickup', items: [{ id: OIL, q: 1 }] });
+    await s2.close();
+    assert.equal(r.status, 503);
+    assert.equal(r.body.error, 'Online payments are not set up yet.');
   });
 });
 
 describe('GET /api/config', () => {
-  const PK = 'pk_test_' + 'A1b2C3d4'.repeat(12); // full-length test keys
-  const SK = 'sk_test_' + 'Z9y8X7w6'.repeat(12);
-  const run = () => { const res = mockRes(); config({}, res); return res; };
+  let srv;
+  before(async () => { srv = await startServer({ env: {} }); });
+  after(() => srv.close());
+  const run = async (keys) => {
+    for (const k of ['STRIPE_PUBLISHABLE_KEY', 'STRIPE_SECRET_KEY']) delete srv.env[k];
+    Object.assign(srv.env, keys);
+    return srv.browser().call('GET', '/config');
+  };
 
-  test('reports Stripe off when keys are missing', () => {
-    delete process.env.STRIPE_PUBLISHABLE_KEY; delete process.env.STRIPE_SECRET_KEY;
-    assert.deepEqual(run().body, { stripe: false });
+  test('reports Stripe off when keys are missing', async () => {
+    assert.deepEqual((await run({})).body, { stripe: false });
   });
 
-  test('shares only the publishable key, never the secret key', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK;
-    const res = run();
-    assert.deepEqual(res.body, { stripe: true, publishableKey: PK, testMode: true });
-    assert.ok(!JSON.stringify(res.body).includes('sk_test'));
-    assert.equal(res.headers['Cache-Control'], 'no-store');
+  test('shares only the publishable key, never the secret key', async () => {
+    const r = await run({ STRIPE_PUBLISHABLE_KEY: PK, STRIPE_SECRET_KEY: SK });
+    assert.deepEqual(r.body, { stripe: true, publishableKey: PK, testMode: true });
+    assert.ok(!JSON.stringify(r.body).includes('sk_test'));
+    assert.equal(r.headers.get('cache-control'), 'no-store');
   });
 
-  test('ignores spaces around pasted keys', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = `  ${PK}\n`; process.env.STRIPE_SECRET_KEY = ` ${SK} `;
-    assert.equal(run().body.publishableKey, PK);
+  test('ignores spaces around pasted keys', async () => {
+    assert.equal((await run({ STRIPE_PUBLISHABLE_KEY: `  ${PK}\n`, STRIPE_SECRET_KEY: ` ${SK} ` })).body.publishableKey, PK);
   });
 
-  test('stays off if only the publishable key is set', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = PK; delete process.env.STRIPE_SECRET_KEY;
-    const body = run().body;
+  test('stays off if only the publishable key is set', async () => {
+    const { body } = await run({ STRIPE_PUBLISHABLE_KEY: PK });
     assert.equal(body.stripe, false);
     assert.match(body.setupProblem, /STRIPE_SECRET_KEY is not a full Stripe secret key/);
   });
 
-  test('rejects the shortened key text copied from the dashboard', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_...JD7i'; process.env.STRIPE_SECRET_KEY = 'sk_test_...JN0I';
-    const body = run().body;
+  test('rejects the shortened key text copied from the dashboard', async () => {
+    const { body } = await run({ STRIPE_PUBLISHABLE_KEY: 'pk_test_...JD7i', STRIPE_SECRET_KEY: 'sk_test_...JN0I' });
     assert.equal(body.stripe, false);
     assert.match(body.setupProblem, /STRIPE_PUBLISHABLE_KEY is not a full Stripe publishable key/);
     assert.ok(!('publishableKey' in body));
   });
 
-  test('rejects a shortened secret key even when the publishable key is fine', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = 'sk_test_…JN0I';
-    assert.match(run().body.setupProblem, /STRIPE_SECRET_KEY/);
+  test('rejects a shortened secret key even when the publishable key is fine', async () => {
+    assert.match((await run({ STRIPE_PUBLISHABLE_KEY: PK, STRIPE_SECRET_KEY: 'sk_test_…JN0I' })).body.setupProblem, /STRIPE_SECRET_KEY/);
   });
 
-  test('rejects mixing test and live keys', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK.replace('sk_test_', 'sk_live_');
-    assert.match(run().body.setupProblem, /different modes/);
+  test('rejects mixing test and live keys', async () => {
+    assert.match((await run({ STRIPE_PUBLISHABLE_KEY: PK, STRIPE_SECRET_KEY: SK.replace('sk_test_', 'sk_live_') })).body.setupProblem, /different modes/);
   });
 
-  test('accepts a restricted secret key', () => {
-    process.env.STRIPE_PUBLISHABLE_KEY = PK; process.env.STRIPE_SECRET_KEY = SK.replace('sk_', 'rk_');
-    assert.equal(run().body.stripe, true);
+  test('accepts a restricted secret key', async () => {
+    assert.equal((await run({ STRIPE_PUBLISHABLE_KEY: PK, STRIPE_SECRET_KEY: SK.replace('sk_', 'rk_') })).body.stripe, true);
   });
 });
