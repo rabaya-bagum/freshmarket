@@ -1,9 +1,9 @@
 // The FreshMarket store: header, departments, filters and product grid, plus the screens that open on top.
-// Products, accounts, carts and orders come from the server (server/app.js). The browser keeps only
+// Products, stores, accounts, carts and orders come from the server (server/app.js). The browser keeps only
 // per-device things: the chosen store, and the cart while nobody is signed in.
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, loadProducts } from './api';
-import { DEPTS, STORES, TINT, local, money, plural, score } from './lib';
+import { DEPTS, TINT, local, money, plural, score } from './lib';
 import { useDialogFocus } from './focus';
 import { AuthDialog, CartDrawer, OrderView, OrdersList, ProductDialog, QtyCtl } from './Dialogs';
 import Checkout, { newCheckout } from './Checkout';
@@ -13,7 +13,7 @@ const TAGS = ['organic', 'gluten-free', 'vegan'];
 
 function initialStore() {
   const st = +local.get('fm-store', 0);
-  return st >= 0 && st < STORES.length ? st : 0;
+  return Number.isInteger(st) && st >= 0 ? st : 0; // checked against the store list once it loads
 }
 function initialCart() {
   const c = local.get('fm-cart', {});
@@ -22,7 +22,8 @@ function initialCart() {
 
 export default function App() {
   const [products, setProducts] = useState([]);
-  const [productsState, setProductsState] = useState('loading');
+  const [stores, setStores] = useState([]);
+  const [productsState, setProductsState] = useState('loading'); // the products and the stores load together
   const [storeIdx, setStoreIdx] = useState(initialStore);
   const [cart, setCart] = useState(initialCart);
   const [user, setUser] = useState(null);
@@ -38,7 +39,7 @@ export default function App() {
   useDialogFocus(layerRef);
 
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-  const store = STORES[storeIdx];
+  const store = stores[storeIdx];
   const stockOf = useCallback((p) => (p.stock && p.stock[storeIdx]) ?? 0, [storeIdx]);
   const cartItems = () => Object.entries(cart).map(([id, q]) => ({ p: byId.get(+id), q })).filter((x) => x.p);
 
@@ -48,9 +49,17 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 2200);
   }, []);
 
-  // ---- startup: products, payment setup and any signed-in session, all from the server
+  // ---- startup: products, stores, payment setup and any signed-in session, all from the server
   useEffect(() => {
-    loadProducts().then((ps) => { setProducts(ps); setProductsState('ready'); }).catch(() => setProductsState('error'));
+    Promise.all([loadProducts(), api.stores()])
+      .then(([ps, st]) => {
+        if (!Array.isArray(st?.data) || !st.data.length) throw new Error('No stores');
+        setProducts(ps);
+        setStores(st.data);
+        setStoreIdx((i) => (i < st.data.length ? i : 0));
+        setProductsState('ready');
+      })
+      .catch(() => setProductsState('error'));
     api.config().then((j) => { if (j && j.stripe) setPay(j); else if (j && j.setupProblem) console.warn('FreshMarket: Stripe is off. ' + j.setupProblem); }).catch(() => {});
     api.session().then((j) => { if (j.user) signedIn(j, { quiet: true }); }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,7 +106,7 @@ export default function App() {
       if (q > max) { changed++; if (max) next[id] = max; else delete next[id]; }
     }
     if (changed) setCart(next);
-    toast(changed ? `Switched to ${STORES[i].name}. ${changed} cart item${changed === 1 ? '' : 's'} adjusted to match stock.` : `Switched to ${STORES[i].name}`);
+    toast(changed ? `Switched to ${stores[i].name}. ${changed} cart item${changed === 1 ? '' : 's'} adjusted to match stock.` : `Switched to ${stores[i].name}`);
   }
 
   // ---- account
@@ -252,8 +261,8 @@ export default function App() {
           <div className="store">
             <label htmlFor="storeSel">Shopping at</label>{' '}
             <select id="storeSel" aria-label="Choose your store" value={storeIdx} onChange={(e) => chooseStore(+e.target.value)}>
-              {STORES.map((x, i) => <option value={i} key={x.name}>{`FreshMarket ${x.city} · ${x.name}`}</option>)}
-            </select>{' '}· <span id="storeHours">{`Open until ${store.close}`}</span>
+              {stores.map((x, i) => <option value={i} key={x.id}>{`FreshMarket ${x.city} · ${x.name}`}</option>)}
+            </select>{' '}· <span id="storeHours">{store ? `Open until ${store.close}` : ''}</span>
           </div>
           <nav className="depts" id="depts" aria-label="Departments">
             <button data-dept="" aria-pressed={!f.dept} onClick={() => { setF((x) => ({ ...x, dept: null, q: '', shown: 12 })); setSearchReset((n) => n + 1); }}>All</button>

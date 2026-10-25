@@ -1,6 +1,5 @@
 // Server-side pricing. The browser only sends product IDs and quantities;
-// prices and totals are always worked out here, so nobody can change what they pay.
-const { byId } = require('./catalog');
+// prices and totals are always worked out here, from the catalog in the database, so nobody can change what they pay.
 
 const DELIVERY_FEE = 4.99;
 const FREE_DELIVERY = 50;
@@ -14,9 +13,10 @@ const r2 = (n) => Math.round(n * 100) / 100;
 
 /**
  * @param {{items: {id:number, q:number}[], mode: 'delivery'|'pickup'}} order
+ * @param {Map<number, {name:string, price:number, was:number|null, per:string|null}>} byId the catalog, from loadCatalog in server/catalog.js
  * @returns {{lines: {p:object, q:number}[], subtotal:number, saved:number, hst:number, fee:number, total:number, weighted:boolean, amountCents:number, captureMethod:'automatic'|'manual'}}
  */
-function priceOrder(order) {
+function priceOrder(order, byId) {
   if (!order || !Array.isArray(order.items) || order.items.length === 0) throw new PricingError('Your cart is empty.');
   if (order.items.length > 100) throw new PricingError('Too many items in one order.');
   if (order.mode !== 'delivery' && order.mode !== 'pickup') throw new PricingError('Choose delivery or pickup.');

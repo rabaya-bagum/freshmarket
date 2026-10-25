@@ -1,7 +1,7 @@
 // Unit tests for the products API. Run with: npm run test:api
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { PRODUCTS } = require('../server/catalog');
+const PRODUCTS = require('../data/products.json'); // what a new database starts with
 const { startServer } = require('./helpers');
 
 let srv, b;

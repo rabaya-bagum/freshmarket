@@ -1,7 +1,4 @@
 // Pure helpers shared by the store screens: money, search, time slots, totals and card checks.
-import STORES from '../data/stores.json';
-
-export { STORES };
 export const DEPTS = ['Produce', 'Meat & Seafood', 'Bakery', 'Deli', 'Dairy & Eggs', 'Pantry', 'Prepared Meals'];
 export const TINT = { Produce: '#e6f3df', 'Meat & Seafood': '#f8e3df', Bakery: '#f6ead6', Deli: '#f3e6ec', 'Dairy & Eggs': '#e4eef6', Pantry: '#efe9dd', 'Prepared Meals': '#e9e6f4' };
 export const DELIVERY_MIN = 35, FREE_DELIVERY = 50, DELIVERY_FEE = 4.99, HOLD_MIN = 30;

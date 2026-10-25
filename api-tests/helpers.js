@@ -45,7 +45,7 @@ async function startServer({ env = {}, stripe = fakeStripe(), sandbox = false } 
     return { call, jar, signIn: (email = 'demo@freshmarket.ca', password = 'Fresh123', cart) => call('POST', '/auth/signin', { email, password, cart }) };
   }
 
-  return { base, browser, stripe, env, close: () => new Promise((ok) => server.close(ok)).then(() => db.close()) };
+  return { base, browser, stripe, env, db, close: () => new Promise((ok) => server.close(ok)).then(() => db.close()) };
 }
 
 module.exports = { startServer, fakeStripe, PK, SK };

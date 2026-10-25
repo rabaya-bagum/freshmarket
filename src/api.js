@@ -40,6 +40,7 @@ export async function loadProducts() {
 
 export const api = {
   config: () => call('GET', '/config'),
+  stores: () => call('GET', '/stores'),
   session: () => call('GET', '/session'),
   signIn: (email, password, cart) => call('POST', '/auth/signin', { email, password, cart }),
   signUp: (name, email, password) => call('POST', '/auth/signup', { name, email, password }),
