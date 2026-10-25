@@ -396,4 +396,4 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
   return app;
 }
 
-module.exports = { createApp, keyProblem, DEMO };
+module.exports = { createApp };

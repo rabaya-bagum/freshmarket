@@ -61,4 +61,4 @@ function priceOrder(order) {
   };
 }
 
-module.exports = { priceOrder, PricingError, DELIVERY_MIN, FREE_DELIVERY, DELIVERY_FEE };
+module.exports = { priceOrder, PricingError };
