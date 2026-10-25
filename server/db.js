@@ -1,9 +1,42 @@
-// Postgres storage for accounts, carts and orders.
+// Postgres storage for the catalog (products, stores, stock), accounts, carts and orders.
 // With DATABASE_URL set (production) it talks to a real Postgres server, such as Neon.
 // Without it, it runs PGlite: the same Postgres, compiled to WebAssembly, inside this process.
 // PGlite keeps data in DATA_DIR when that is set, otherwise in memory (tests, quick local runs).
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS stores (
+  id INT PRIMARY KEY,
+  name TEXT NOT NULL,
+  city TEXT NOT NULL,
+  addr TEXT NOT NULL,
+  close TEXT NOT NULL,
+  areas JSONB NOT NULL
+);
+CREATE TABLE IF NOT EXISTS products (
+  id INT PRIMARY KEY,
+  name TEXT NOT NULL,
+  dept TEXT NOT NULL,
+  emoji TEXT NOT NULL,
+  size TEXT NOT NULL,
+  price NUMERIC(10,2) NOT NULL CHECK (price > 0),
+  was NUMERIC(10,2),
+  per TEXT,
+  tags JSONB NOT NULL DEFAULT '[]',
+  local BOOLEAN NOT NULL DEFAULT false,
+  pop INT NOT NULL DEFAULT 0,
+  is_new BOOLEAN NOT NULL DEFAULT false,
+  brand TEXT NOT NULL,
+  origin TEXT NOT NULL,
+  description TEXT NOT NULL,
+  nutrition JSONB NOT NULL,
+  allergens TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS stock (
+  store_id INT NOT NULL REFERENCES stores(id),
+  product_id INT NOT NULL REFERENCES products(id),
+  qty INT NOT NULL CHECK (qty >= 0),
+  PRIMARY KEY (store_id, product_id)
+);
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   ns TEXT NOT NULL,
@@ -52,6 +85,8 @@ async function openDb({ url = process.env.DATABASE_URL, dataDir = process.env.DA
     await lite.exec(SCHEMA);
     db = { kind: dataDir ? 'pglite-file' : 'pglite-memory', query: (sql, params) => lite.query(sql, params), close: () => lite.close() };
   }
+  // A new database starts with the products, stores and stock from data/ (server/catalog.js)
+  await require('./catalog').seedCatalog(db);
   return db;
 }
 

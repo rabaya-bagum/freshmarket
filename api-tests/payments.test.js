@@ -2,7 +2,9 @@
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { priceOrder, PricingError } = require('../server/pricing');
-const { PRODUCTS } = require('../server/catalog');
+const PRODUCTS = require('../data/products.json');
+const byId = new Map(PRODUCTS.map((p) => [p.id, p]));
+const price = (order) => priceOrder(order, byId); // the server passes the catalog it read from the database
 const { startServer, fakeStripe, PK, SK } = require('./helpers');
 
 const id = (name) => PRODUCTS.find((p) => p.name === name).id;
@@ -12,7 +14,7 @@ const CHICKEN = id('Chicken Breasts'); // 7.99 per lb
 
 describe('priceOrder', () => {
   test('delivery under $50 adds the $4.99 fee and estimated HST', () => {
-    const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 3 }] });
+    const r = price({ mode: 'delivery', items: [{ id: OIL, q: 3 }] });
     assert.equal(r.subtotal, 41.97);
     assert.equal(r.hst, 1.36);
     assert.equal(r.fee, 4.99);
@@ -23,27 +25,27 @@ describe('priceOrder', () => {
   });
 
   test('delivery is free at $50 or more', () => {
-    const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 4 }] });
+    const r = price({ mode: 'delivery', items: [{ id: OIL, q: 4 }] });
     assert.equal(r.subtotal, 55.96);
     assert.equal(r.fee, 0);
   });
 
   test('pickup has no fee and no minimum', () => {
-    const r = priceOrder({ mode: 'pickup', items: [{ id: SOURDOUGH, q: 1 }] });
+    const r = price({ mode: 'pickup', items: [{ id: SOURDOUGH, q: 1 }] });
     assert.equal(r.fee, 0);
     assert.equal(r.total, 5.67);
     assert.equal(r.amountCents, 567);
   });
 
   test('delivery under the $35 minimum is refused', () => {
-    assert.throws(() => priceOrder({ mode: 'delivery', items: [{ id: SOURDOUGH, q: 1 }] }), {
+    assert.throws(() => price({ mode: 'delivery', items: [{ id: SOURDOUGH, q: 1 }] }), {
       name: 'Error',
       message: 'Delivery needs a minimum order of $35.00.',
     });
   });
 
   test('weighted items are authorized at 110% and captured later', () => {
-    const r = priceOrder({ mode: 'delivery', items: [{ id: OIL, q: 3 }, { id: CHICKEN, q: 1 }] });
+    const r = price({ mode: 'delivery', items: [{ id: OIL, q: 3 }, { id: CHICKEN, q: 1 }] });
     assert.equal(r.total, 56.57);
     assert.equal(r.weighted, true);
     assert.equal(r.amountCents, 6223);
@@ -53,7 +55,7 @@ describe('priceOrder', () => {
   test('matches the checkout page for every product (no rounding drift)', () => {
     for (const p of PRODUCTS) {
       for (const q of [1, 2, 3, 7]) {
-        const r = priceOrder({ mode: 'pickup', items: [{ id: p.id, q }] });
+        const r = price({ mode: 'pickup', items: [{ id: p.id, q }] });
         const sub = p.price * q, total = sub + sub * 0.13 * 0.25;
         const expected = Math.round((p.per ? Math.round(total * 1.1 * 100) / 100 : Math.round(total * 100) / 100) * 100);
         assert.equal(r.amountCents, expected, `${p.name} × ${q}`);
@@ -70,12 +72,12 @@ describe('priceOrder', () => {
     ['huge quantity', { mode: 'pickup', items: [{ id: OIL, q: 1000 }] }, 'Invalid quantity for Extra Virgin Olive Oil.'],
   ]) {
     test(`rejects ${label}`, () => {
-      assert.throws(() => priceOrder(order), (e) => e instanceof PricingError && e.message === message);
+      assert.throws(() => price(order), (e) => e instanceof PricingError && e.message === message);
     });
   }
 
   test('ignores any price the browser sends', () => {
-    const r = priceOrder({ mode: 'pickup', items: [{ id: OIL, q: 1, price: 0.01 }], total: 0.01 });
+    const r = price({ mode: 'pickup', items: [{ id: OIL, q: 1, price: 0.01 }], total: 0.01 });
     assert.equal(r.subtotal, 13.99);
   });
 });

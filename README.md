@@ -25,10 +25,9 @@ Sample data: 50 products across 7 departments, and 3 stores (Square One, Oakvill
 
 ```
 Browser (React)  ──/api──►  Node server (Express)  ──►  Postgres
- src/                        server/                     accounts, carts, orders
-                             data/products.json          (PGlite locally, e.g. Neon in production)
-                             data/stores.json
-                             Stripe (payments)
+ src/                        server/                     products, stores, stock,
+                             Stripe (payments)           accounts, carts, orders
+                                                         (PGlite locally, e.g. Neon in production)
 ```
 
 | Folder / file | Job |
@@ -36,14 +35,16 @@ Browser (React)  ──/api──►  Node server (Express)  ──►  Postgres
 | `src/` | The React store: `App.jsx` (header, departments, filters, grid), `Dialogs.jsx` (cart, product, account, orders), `Checkout.jsx` (time slots and payment), `lib.js` (search, totals, slots), `focus.js` (keyboard focus in dialogs) |
 | `server/app.js` | Every `/api` endpoint (listed below) |
 | `server/pricing.js` | Prices, HST, delivery fee, minimum order and the 110% hold for items sold by weight |
-| `server/catalog.js` | Products and stores, and stock for each store |
+| `server/catalog.js` | Reads products, stores and stock from the database, and fills an empty database from `data/` |
 | `server/db.js` | The database tables, and the connection: Postgres when `DATABASE_URL` is set, otherwise PGlite |
 | `server/security.js` | Password hashing (scrypt) and signed session cookies |
 | `server/index.js` | Runs the whole app on your computer |
 | `api/index.js` | Runs the server on Vercel |
-| `data/products.json`, `data/stores.json` | The catalog and stores. This is the only copy: the store page loads products from the server |
+| `data/products.json`, `data/stores.json` | Starting data only. The first time the server starts on an empty database, it copies them into the `products`, `stores` and `stock` tables |
 
 What the server keeps:
+
+- **The catalog.** Products, stores and the stock at each store live in the `products`, `stores` and `stock` tables. The store page loads them through the API, and orders are priced and checked from them. To change a price, the stock or a product, change the table (for example in Neon's SQL editor); the site follows within a minute (product answers are cached for 60 seconds). Editing `data/` afterwards changes nothing, because the tables are only filled once.
 
 - **Accounts.** Passwords are stored as salted scrypt hashes, never as text. Signing in sets a session cookie that is signed by the server and hidden from page scripts (`HttpOnly`), and it lasts 30 days. After 5 wrong passwords the account locks until the password is reset, or for 15 minutes.
 - **Carts.** While you are signed in, your cart is saved to your account, so it follows you to other devices. Anything you added before signing in joins the saved cart. A guest cart stays in the browser.
@@ -57,6 +58,7 @@ The browser only sends product IDs and quantities, so nobody can change what the
 |----------|------|
 | `GET /api/products?page=1&per_page=10` | One page of products (maximum 50 per page), with `page`, `per_page`, `total` and `total_pages` |
 | `GET /api/products/:id` | One product. An id that is not a whole number (e.g. `/api/products/a`) gets a `500` server error; an unknown id gets `404` |
+| `GET /api/stores` | The stores, with their address, closing time and delivery areas |
 | `GET /api/config` | Whether Stripe is on. Shares only the publishable key |
 | `POST /api/create-payment-intent` | Prices the order and creates the Stripe payment |
 | `GET /api/session` | The signed-in shopper, their saved cart and their orders |
@@ -174,7 +176,7 @@ If Vercel Deployment Protection is on for previews, create a **Protection Bypass
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the server: 164 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (360 checks). They run against the real server with a fresh in-memory database. Every test's browser gets its own private accounts, carts and orders (`FM_SANDBOX=1`, test runs only), so tests running side by side never see each other's data. The server has 65 more unit tests.
+Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the server: 164 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (360 checks). They run against the real server with a fresh in-memory database. Every test's browser gets its own private accounts, carts and orders (`FM_SANDBOX=1`, test runs only), so tests running side by side never see each other's data. The server has 72 more unit tests.
 
 | File | Story |
 |------|-------|
@@ -190,6 +192,7 @@ Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loadi
 | `api-tests/payments.test.js` | Pricing, `/api/create-payment-intent` and `/api/config`, with a fake Stripe client |
 | `api-tests/products.test.js` | Products API: paging, defaults, bad input, unknown ids (and the `500` for ids that aren't numbers), GET only |
 | `api-tests/accounts.test.js` | Sign-in, sessions, lockout and reset, sign-up and verification, password hashing, saved carts, placing orders (pricing, stock, delivery area), order status, Stripe payment checks, and sandbox isolation |
+| `api-tests/catalog.test.js` | The catalog in the database: a new database is filled once from `data/`, `/api/stores`, and a price, stock or product changed in the tables shows in the API and in orders |
 | `tests/accessibility.spec.ts` | Accessibility: every screen scanned with axe-core against WCAG 2.1 AA in light and dark mode, plus keyboard-only shopping, focus handling, announcements and 200% zoom |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 

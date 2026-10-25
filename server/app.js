@@ -2,7 +2,7 @@
 // createApp() only builds the Express app. server/index.js serves it locally; api/index.js runs it on Vercel.
 const crypto = require('node:crypto');
 const express = require('express');
-const { PRODUCTS, STORES, byId, stockAt, toProduct } = require('./catalog');
+const { loadCatalog } = require('./catalog');
 const { priceOrder, PricingError } = require('./pricing');
 const { hashPassword, checkPassword, sessions, parseCookies } = require('./security');
 
@@ -107,16 +107,19 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
     res.cookie('fm_session', session.create(userId), { httpOnly: true, sameSite: 'lax', secure, path: '/', maxAge: 30 * 864e5 });
   }
 
+  // ---- the catalog (products, stores, stock) is read from the database for each request that needs it
+  const catalog = () => loadCatalog(db);
+
   // ---- cart: { [productId]: quantity }
-  function cleanCart(items) {
+  function cleanCart(items, byId) {
     const out = {};
     if (!items || typeof items !== 'object' || Array.isArray(items)) return out;
     for (const [id, q] of Object.entries(items)) if (byId.has(Number(id)) && Number.isInteger(q) && q > 0) out[Number(id)] = Math.min(q, 99);
     return out;
   }
-  async function loadCart(userId) {
+  async function loadCart(userId, byId) {
     const { rows } = await db.query('SELECT items FROM carts WHERE user_id = $1', [userId]);
-    return cleanCart(rows[0]?.items);
+    return cleanCart(rows[0]?.items, byId);
   }
   async function saveCart(userId, items) {
     await db.query(
@@ -134,8 +137,9 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
   }
   async function signedIn(res, user, guestCart) {
     // Anything added before signing in joins the saved cart (the larger quantity wins)
-    const cart = await loadCart(user.id);
-    for (const [id, q] of Object.entries(cleanCart(guestCart))) cart[id] = Math.max(cart[id] || 0, q);
+    const { byId } = await catalog();
+    const cart = await loadCart(user.id, byId);
+    for (const [id, q] of Object.entries(cleanCart(guestCart, byId))) cart[id] = Math.max(cart[id] || 0, q);
     await saveCart(user.id, cart);
     startSession(res, user.id);
     res.json({ user: { name: user.name, email: user.email }, cart, orders: await loadOrders(user.id) });
@@ -147,23 +151,29 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
     const n = Number(value);
     return Number.isInteger(n) && n > 0 ? n : null;
   };
-  api.route('/products').get((req, res) => {
+  api.route('/products').get(wrap(async (req, res) => {
     const page = positiveInt(req.query.page, 1), perPage = positiveInt(req.query.per_page, 10);
     if (page === null || perPage === null || perPage > 50) return res.status(400).json({ error: 'page must be a positive whole number and per_page between 1 and 50.' });
+    const { products } = await catalog();
     res.setHeader('Cache-Control', 'public, max-age=60');
     const start = (page - 1) * perPage;
-    res.json({ page, per_page: perPage, total: PRODUCTS.length, total_pages: Math.ceil(PRODUCTS.length / perPage), data: PRODUCTS.slice(start, start + perPage).map(toProduct) });
-  }).all(only('GET'));
+    res.json({ page, per_page: perPage, total: products.length, total_pages: Math.ceil(products.length / perPage), data: products.slice(start, start + perPage) });
+  })).all(only('GET'));
 
-  api.route('/products/:id').get((req, res) => {
+  api.route('/products/:id').get(wrap(async (req, res) => {
     const raw = req.params.id, id = Number(raw);
     // An id that is not a whole number (e.g. /api/products/a) is answered with a server error.
     if (!/^\d+$/.test(raw) || !Number.isInteger(id)) return res.status(500).json({ error: 'Server error: product id must be a whole number.' });
-    const p = byId.get(id);
+    const p = (await catalog()).byId.get(id);
     if (!p) return res.status(404).json({ error: `Product ${id} not found.` });
     res.setHeader('Cache-Control', 'public, max-age=60');
-    res.json({ data: toProduct(p) });
-  }).all(only('GET'));
+    res.json({ data: p });
+  })).all(only('GET'));
+
+  api.route('/stores').get(wrap(async (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json({ data: (await catalog()).stores });
+  })).all(only('GET'));
 
   // ---- payments
   api.route('/config').get((req, res) => {
@@ -177,9 +187,10 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
 
   api.route('/create-payment-intent').post(wrap(async (req, res) => {
     if (!stripeKeys().sk) return res.status(503).json({ error: 'Online payments are not set up yet.' });
+    const { byId } = await catalog();
     let priced;
     try {
-      priced = priceOrder(req.body);
+      priced = priceOrder(req.body, byId);
     } catch (e) {
       return res.status(400).json({ error: e instanceof PricingError ? e.message : 'The order could not be read.' });
     }
@@ -205,7 +216,7 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
     res.setHeader('Cache-Control', 'no-store');
     const u = await currentUser(req);
     if (!u) return res.json({ user: null });
-    res.json({ user: { name: u.name, email: u.email }, cart: await loadCart(u.id), orders: await loadOrders(u.id) });
+    res.json({ user: { name: u.name, email: u.email }, cart: await loadCart(u.id, (await catalog()).byId), orders: await loadOrders(u.id) });
   }));
 
   api.post('/auth/signin', wrap(async (req, res) => {
@@ -282,7 +293,7 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
 
   api.put('/cart', wrap(async (req, res) => {
     const u = await needUser(req);
-    const cart = cleanCart(req.body.items);
+    const cart = cleanCart(req.body.items, (await catalog()).byId);
     await saveCart(u.id, cart);
     res.json({ cart });
   }));
@@ -291,16 +302,18 @@ function createApp({ db, stripe = null, env = process.env, sandbox = false }) {
   api.post('/orders', wrap(async (req, res) => {
     const u = await needUser(req);
     const b = req.body;
-    const store = STORES[b.store];
+    const { stores, byId } = await catalog();
+    const store = stores.find((s) => s.id === b.store);
     if (!Number.isInteger(b.store) || !store) throw new HttpError(400, 'Choose a store.');
     let priced;
     try {
-      priced = priceOrder({ mode: b.mode, items: b.items });
+      priced = priceOrder({ mode: b.mode, items: b.items }, byId);
     } catch (e) {
       throw new HttpError(400, e instanceof PricingError ? e.message : 'The order could not be read.');
     }
+    const storeIndex = stores.indexOf(store);
     for (const { p, q } of priced.lines) {
-      const left = stockAt(p, b.store);
+      const left = p.stock[storeIndex];
       if (q > left) throw new HttpError(409, left ? `Only ${left} of ${p.name} left at ${store.name}.` : `${p.name} is out of stock at ${store.name}.`);
     }
     const when = String(b.when || '').trim();

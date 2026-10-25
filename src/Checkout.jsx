@@ -130,7 +130,7 @@ function Pay({ s, c, t, update, pay }) {
   }, [pay.stripe]);
 
   const order = (paidWith, paymentId) => s.placeOrder({
-    store: s.storeIdx, mode: c.mode, items: t.items.map(({ p, q }) => ({ id: p.id, q })), when: slotLabel(c.day, c.slot),
+    store: s.store.id, mode: c.mode, items: t.items.map(({ p, q }) => ({ id: p.id, q })), when: slotLabel(c.day, c.slot),
     street: c.street, postal: c.postal, paidWith, paymentId,
   });
 
