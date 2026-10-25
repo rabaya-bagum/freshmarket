@@ -265,6 +265,16 @@ const P=[
 ["Beef Lasagna","Prepared Meals","🍝","1 kg, serves 4",13.49,null,null,8,[],1,43,0,"FreshMarket Kitchen","Ontario","Layered with ricotta and slow-cooked beef ragù.",{cal:410,fat:"19 g",carb:"35 g",prot:"24 g",sod:"880 mg"},"Wheat, Milk, Egg"],
 ].map((r,i)=>({id:i+1,name:r[0],dept:r[1],emoji:r[2],size:r[3],price:r[4],was:r[5],per:r[6],stock:r[7],tags:r[8],local:!!r[9],pop:r[10],isNew:!!r[11],brand:r[12],origin:r[13],desc:r[14],nf:r[15],allergens:r[16]}));
 window.FM_PRODUCTS=P;
+// ---- products API: names and prices come from the server price list. The rest of each product
+// (department, size, stock, nutrition) stays above. Without the API (opened as a file, GitHub Pages) the list above is used as is.
+async function loadProducts(){const got=[];
+  for(let page=1,pages=1;page<=pages&&page<=20;page++){
+    const r=await fetch(`/api/products?page=${page}&per_page=50`);if(!r.ok)return;
+    const j=await r.json();if(!j||!Array.isArray(j.data))return;got.push(...j.data);pages=+j.total_pages||1}
+  const byId=new Map(got.filter(x=>x&&typeof x.name==="string"&&Number.isFinite(x.price)&&x.price>0).map(x=>[x.id,x]));
+  for(const p of P){const s=byId.get(p.id);if(!s)continue;p.name=s.name;p.price=s.price;p.per=s.per||null;if(p.was!=null&&p.was<=p.price)p.was=null}
+  render()}
+loadProducts().catch(()=>{});
 
 const STORES=[
  {name:"Square One",city:"Mississauga",addr:"100 City Centre Dr, Mississauga, ON L5B 2C9",close:"10 pm",areas:["L4Z","L5A","L5B","L5C","L5M","L5R"]},
