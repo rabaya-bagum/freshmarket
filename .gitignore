@@ -2,3 +2,6 @@ node_modules/
 playwright-report/
 smoke-report/
 test-results/
+dist/
+.data/
+.env

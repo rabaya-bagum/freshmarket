@@ -1,15 +1,15 @@
 import { Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { test, expect } from './fixtures';
+import { test, expect, Store } from './fixtures';
 
-// The store takes product names and prices from GET /api/products, and falls back to
-// its built-in list when the API is not there. The API is replaced with a stand-in here.
-type ApiProduct = { id: number; name: string; price: number; per: string | null };
-const PRICES: ApiProduct[] = JSON.parse(readFileSync('data/prices.json', 'utf8'));
+// The store gets every product from GET /api/products; there is no copy in the page.
+// Here the API is replaced with a stand-in before the store opens, to check what it does with each kind of reply.
+type Product = { id: number; name: string; price: number; was: number | null; per: string | null; stock: number };
+const PRODUCTS: Product[] = JSON.parse(readFileSync('data/products.json', 'utf8'));
 
-const withChanges = (changes: Record<number, Partial<ApiProduct>>) => PRICES.map((p) => ({ ...p, ...changes[p.id] }));
+const withChanges = (changes: Record<number, Partial<Product>>) => PRODUCTS.map((p) => ({ ...p, ...changes[p.id] }));
 
-async function fakeProductsApi(page: Page, products: ApiProduct[], perPage = 50) {
+async function fakeProductsApi(page: Page, products: Product[], perPage = 50) {
   const requested: string[] = [];
   await page.route('**/api/products?*', (r) => {
     const url = new URL(r.request().url());
@@ -21,59 +21,60 @@ async function fakeProductsApi(page: Page, products: ApiProduct[], perPage = 50)
         per_page: perPage,
         total: products.length,
         total_pages: Math.ceil(products.length / perPage),
-        data: products.slice((n - 1) * perPage, n * perPage).map((p) => ({ ...p, sold_by_weight: Boolean(p.per) })),
+        data: products.slice((n - 1) * perPage, n * perPage).map((p) => ({ ...p, sold_by_weight: Boolean(p.per), stock: [p.stock, p.stock, p.stock] })),
       },
     });
   });
   return requested;
 }
 
-test('shows names and prices from the products API', async ({ store, page }) => {
+async function open(page: Page) {
+  await page.goto('/');
+  return new Store(page);
+}
+
+test('shows the names and prices the server sends', async ({ page }) => {
   await fakeProductsApi(page, withChanges({ 2: { name: 'Organic Bananas', price: 0.99 }, 13: { price: 5.79 } }));
-  await page.reload();
+  const store = await open(page);
   await expect(store.card('Organic Bananas').locator('.price b')).toHaveText('$0.99 /lb');
   await expect(store.card('Sourdough Loaf').locator('.price b')).toHaveText('$5.79');
   await expect(store.card('Bananas')).toHaveCount(0);
 });
 
-test('the cart uses the API price', async ({ store, page }) => {
+test('the cart uses the server price', async ({ page }) => {
   await fakeProductsApi(page, withChanges({ 13: { price: 5.79 } }));
-  await page.reload();
+  const store = await open(page);
   await expect(store.card('Sourdough Loaf').locator('.price b')).toHaveText('$5.79');
   await store.addToCart('Sourdough Loaf');
   const cart = await store.openCart();
   await expect(cart).toContainText('$5.79');
 });
 
-test('drops the sale badge when the API price is not below the old price', async ({ store, page }) => {
-  // Honeycrisp Apples are built in at $2.99, was $3.49
-  await fakeProductsApi(page, withChanges({ 1: { price: 3.49 } }));
-  await page.reload();
-  const apples = store.card('Honeycrisp Apples');
-  await expect(apples.locator('.price b')).toHaveText('$3.49 /lb');
-  await expect(apples.locator('.badge')).toHaveCount(0);
-  await expect(apples.locator('.price s')).toHaveCount(0);
+test('shows only the products the server sends', async ({ page }) => {
+  await fakeProductsApi(page, PRODUCTS.slice(0, 3));
+  const store = await open(page);
+  await expect(page.locator('#subtitle')).toHaveText('3 products');
+  await expect(store.grid.locator('article.card')).toHaveCount(3);
 });
 
-test('reads every page of the API', async ({ store, page }) => {
+test('reads every page of the API', async ({ page }) => {
   const requested = await fakeProductsApi(page, withChanges({ 50: { price: 14.99 } }), 25);
-  await page.reload();
+  const store = await open(page);
   await store.search.fill('Beef Lasagna');
   await store.search.press('Enter');
   await expect(store.card('Beef Lasagna').locator('.price b')).toHaveText('$14.99');
   expect(requested).toEqual(['?page=1&per_page=50', '?page=2&per_page=50']);
 });
 
-test('falls back to the built-in prices when the API is down', async ({ store, page }) => {
+test('says so when the products cannot load', async ({ page }) => {
   await page.route('**/api/products?*', (r) => r.fulfill({ status: 500, json: { error: 'down' } }));
-  await page.reload();
-  await expect(store.title).toHaveText('All departments');
-  await expect(store.card('Bananas').locator('.price b')).toHaveText('$0.79 /lb');
-  await expect(page.locator('#subtitle')).toHaveText('50 products');
+  await open(page);
+  await expect(page.getByRole('alert')).toContainText('Products could not load');
+  await expect(page.locator('article.card')).toHaveCount(0);
 });
 
-test('ignores a reply that is not a product list', async ({ store, page }) => {
+test('treats a reply that is not a product list as a failure', async ({ page }) => {
   await page.route('**/api/products?*', (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><p>Not found</p>' }));
-  await page.reload();
-  await expect(store.card('Bananas').locator('.price b')).toHaveText('$0.79 /lb');
+  await open(page);
+  await expect(page.getByRole('alert')).toContainText('Products could not load');
 });

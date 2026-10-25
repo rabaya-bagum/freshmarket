@@ -1,0 +1,1415 @@
+[
+ {
+  "id": 1,
+  "name": "Honeycrisp Apples",
+  "dept": "Produce",
+  "emoji": "🍎",
+  "size": "per lb (approx. 0.5 lb each)",
+  "price": 2.99,
+  "was": 3.49,
+  "per": "lb",
+  "stock": 48,
+  "tags": [
+   "organic"
+  ],
+  "local": true,
+  "pop": 98,
+  "isNew": false,
+  "brand": "FreshMarket Farms",
+  "origin": "Ontario",
+  "desc": "Crisp, juicy and sweet. Picked in Norfolk County this fall.",
+  "nf": {
+   "cal": 95,
+   "fat": "0.3 g",
+   "carb": "25 g",
+   "prot": "0.5 g",
+   "sod": "2 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 2,
+  "name": "Bananas",
+  "dept": "Produce",
+  "emoji": "🍌",
+  "size": "per lb",
+  "price": 0.79,
+  "was": null,
+  "per": "lb",
+  "stock": 120,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 99,
+  "isNew": false,
+  "brand": "FreshMarket",
+  "origin": "Ecuador",
+  "desc": "Ripen at room temperature. Perfect for smoothies and baking.",
+  "nf": {
+   "cal": 105,
+   "fat": "0.4 g",
+   "carb": "27 g",
+   "prot": "1.3 g",
+   "sod": "1 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 3,
+  "name": "Baby Spinach",
+  "dept": "Produce",
+  "emoji": "🥬",
+  "size": "312 g clamshell",
+  "price": 4.99,
+  "was": 5.99,
+  "per": null,
+  "stock": 30,
+  "tags": [
+   "organic",
+   "vegan"
+  ],
+  "local": false,
+  "pop": 80,
+  "isNew": true,
+  "brand": "Earth Leaf",
+  "origin": "USA",
+  "desc": "Triple-washed, ready to eat.",
+  "nf": {
+   "cal": 20,
+   "fat": "0.3 g",
+   "carb": "3 g",
+   "prot": "2.5 g",
+   "sod": "70 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 4,
+  "name": "Field Tomatoes",
+  "dept": "Produce",
+  "emoji": "🍅",
+  "size": "per lb",
+  "price": 2.49,
+  "was": null,
+  "per": "lb",
+  "stock": 4,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 74,
+  "isNew": false,
+  "brand": "Leamington Growers",
+  "origin": "Ontario",
+  "desc": "Vine-ripened field tomatoes from Leamington.",
+  "nf": {
+   "cal": 22,
+   "fat": "0.2 g",
+   "carb": "5 g",
+   "prot": "1.1 g",
+   "sod": "6 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 5,
+  "name": "Hass Avocados",
+  "dept": "Produce",
+  "emoji": "🥑",
+  "size": "bag of 4",
+  "price": 5.99,
+  "was": 6.99,
+  "per": null,
+  "stock": 40,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 90,
+  "isNew": false,
+  "brand": "FreshMarket",
+  "origin": "Mexico",
+  "desc": "Creamy and rich. Ready to eat in 1–2 days.",
+  "nf": {
+   "cal": 240,
+   "fat": "22 g",
+   "carb": "13 g",
+   "prot": "3 g",
+   "sod": "11 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 6,
+  "name": "Strawberries",
+  "dept": "Produce",
+  "emoji": "🍓",
+  "size": "454 g",
+  "price": 3.99,
+  "was": null,
+  "per": null,
+  "stock": 0,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 85,
+  "isNew": false,
+  "brand": "Berry Hill",
+  "origin": "USA",
+  "desc": "Sweet, bright red berries.",
+  "nf": {
+   "cal": 50,
+   "fat": "0.5 g",
+   "carb": "12 g",
+   "prot": "1 g",
+   "sod": "2 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 7,
+  "name": "Ontario Carrots",
+  "dept": "Produce",
+  "emoji": "🥕",
+  "size": "2 lb bag",
+  "price": 2.29,
+  "was": null,
+  "per": null,
+  "stock": 60,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 60,
+  "isNew": false,
+  "brand": "Holland Marsh",
+  "origin": "Ontario",
+  "desc": "Sweet carrots from the Holland Marsh.",
+  "nf": {
+   "cal": 41,
+   "fat": "0.2 g",
+   "carb": "10 g",
+   "prot": "0.9 g",
+   "sod": "69 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 8,
+  "name": "Lemons",
+  "dept": "Produce",
+  "emoji": "🍋",
+  "size": "each",
+  "price": 0.89,
+  "was": null,
+  "per": null,
+  "stock": 90,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 55,
+  "isNew": false,
+  "brand": "FreshMarket",
+  "origin": "Spain",
+  "desc": "Bright and juicy. Great for dressings and drinks.",
+  "nf": {
+   "cal": 17,
+   "fat": "0.2 g",
+   "carb": "5 g",
+   "prot": "0.6 g",
+   "sod": "1 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 9,
+  "name": "Atlantic Salmon Fillet",
+  "dept": "Meat & Seafood",
+  "emoji": "🐟",
+  "size": "per lb (approx. 1 lb)",
+  "price": 13.99,
+  "was": 16.99,
+  "per": "lb",
+  "stock": 14,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 88,
+  "isNew": false,
+  "brand": "Bay of Fundy",
+  "origin": "New Brunswick",
+  "desc": "Fresh, skin-on fillet. Never frozen.",
+  "nf": {
+   "cal": 208,
+   "fat": "13 g",
+   "carb": "0 g",
+   "prot": "20 g",
+   "sod": "59 mg"
+  },
+  "allergens": "Fish"
+ },
+ {
+  "id": 10,
+  "name": "Chicken Breasts",
+  "dept": "Meat & Seafood",
+  "emoji": "🍗",
+  "size": "per lb (approx. 2 lb pack)",
+  "price": 7.99,
+  "was": null,
+  "per": "lb",
+  "stock": 25,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 95,
+  "isNew": false,
+  "brand": "Maple Lodge",
+  "origin": "Ontario",
+  "desc": "Boneless, skinless, air-chilled.",
+  "nf": {
+   "cal": 165,
+   "fat": "3.6 g",
+   "carb": "0 g",
+   "prot": "31 g",
+   "sod": "74 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 11,
+  "name": "Lean Ground Beef",
+  "dept": "Meat & Seafood",
+  "emoji": "🥩",
+  "size": "per lb",
+  "price": 6.49,
+  "was": 7.49,
+  "per": "lb",
+  "stock": 3,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 82,
+  "isNew": false,
+  "brand": "Ontario Beef",
+  "origin": "Ontario",
+  "desc": "Ground fresh in store daily.",
+  "nf": {
+   "cal": 250,
+   "fat": "15 g",
+   "carb": "0 g",
+   "prot": "26 g",
+   "sod": "72 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 12,
+  "name": "Wild Shrimp",
+  "dept": "Meat & Seafood",
+  "emoji": "🦐",
+  "size": "340 g, raw, peeled",
+  "price": 11.99,
+  "was": null,
+  "per": null,
+  "stock": 18,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 58,
+  "isNew": true,
+  "brand": "Ocean Catch",
+  "origin": "Canada",
+  "desc": "Raw, peeled and deveined. Frozen at sea.",
+  "nf": {
+   "cal": 85,
+   "fat": "0.5 g",
+   "carb": "0 g",
+   "prot": "20 g",
+   "sod": "119 mg"
+  },
+  "allergens": "Crustacean"
+ },
+ {
+  "id": 13,
+  "name": "Sourdough Loaf",
+  "dept": "Bakery",
+  "emoji": "🍞",
+  "size": "675 g",
+  "price": 5.49,
+  "was": null,
+  "per": null,
+  "stock": 22,
+  "tags": [
+   "vegan"
+  ],
+  "local": true,
+  "pop": 93,
+  "isNew": false,
+  "brand": "FreshMarket Bakehouse",
+  "origin": "Ontario",
+  "desc": "Naturally leavened, baked fresh each morning.",
+  "nf": {
+   "cal": 180,
+   "fat": "1 g",
+   "carb": "36 g",
+   "prot": "7 g",
+   "sod": "390 mg"
+  },
+  "allergens": "Wheat"
+ },
+ {
+  "id": 14,
+  "name": "Butter Croissants",
+  "dept": "Bakery",
+  "emoji": "🥐",
+  "size": "pack of 4",
+  "price": 5.99,
+  "was": 6.99,
+  "per": null,
+  "stock": 15,
+  "tags": [],
+  "local": false,
+  "pop": 86,
+  "isNew": false,
+  "brand": "FreshMarket Bakehouse",
+  "origin": "Ontario",
+  "desc": "Flaky all-butter croissants.",
+  "nf": {
+   "cal": 230,
+   "fat": "12 g",
+   "carb": "26 g",
+   "prot": "5 g",
+   "sod": "260 mg"
+  },
+  "allergens": "Wheat, Milk, Egg"
+ },
+ {
+  "id": 15,
+  "name": "Everything Bagels",
+  "dept": "Bakery",
+  "emoji": "🥯",
+  "size": "pack of 6",
+  "price": 4.49,
+  "was": null,
+  "per": null,
+  "stock": 30,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 64,
+  "isNew": false,
+  "brand": "FreshMarket Bakehouse",
+  "origin": "Ontario",
+  "desc": "Topped with sesame, poppy, garlic and onion.",
+  "nf": {
+   "cal": 270,
+   "fat": "2 g",
+   "carb": "53 g",
+   "prot": "10 g",
+   "sod": "480 mg"
+  },
+  "allergens": "Wheat, Sesame"
+ },
+ {
+  "id": 16,
+  "name": "Gluten-Free Seed Bread",
+  "dept": "Bakery",
+  "emoji": "🌾",
+  "size": "500 g",
+  "price": 7.99,
+  "was": null,
+  "per": null,
+  "stock": 9,
+  "tags": [
+   "gluten-free",
+   "vegan"
+  ],
+  "local": false,
+  "pop": 40,
+  "isNew": true,
+  "brand": "Glow Bakery",
+  "origin": "Ontario",
+  "desc": "Packed with sunflower, flax and pumpkin seeds.",
+  "nf": {
+   "cal": 150,
+   "fat": "6 g",
+   "carb": "20 g",
+   "prot": "4 g",
+   "sod": "220 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 17,
+  "name": "Smoked Turkey Breast",
+  "dept": "Deli",
+  "emoji": "🦃",
+  "size": "per 100 g, sliced to order",
+  "price": 2.79,
+  "was": null,
+  "per": "100 g",
+  "stock": 35,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 70,
+  "isNew": false,
+  "brand": "FreshMarket Deli",
+  "origin": "Ontario",
+  "desc": "Hardwood smoked, sliced fresh.",
+  "nf": {
+   "cal": 104,
+   "fat": "1.7 g",
+   "carb": "4 g",
+   "prot": "18 g",
+   "sod": "780 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 18,
+  "name": "Aged Cheddar",
+  "dept": "Deli",
+  "emoji": "🧀",
+  "size": "200 g",
+  "price": 6.99,
+  "was": 7.99,
+  "per": null,
+  "stock": 27,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 77,
+  "isNew": false,
+  "brand": "Ontario Dairy Co.",
+  "origin": "Ontario",
+  "desc": "Aged 3 years. Sharp and crumbly.",
+  "nf": {
+   "cal": 120,
+   "fat": "10 g",
+   "carb": "0 g",
+   "prot": "7 g",
+   "sod": "190 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 19,
+  "name": "Classic Hummus",
+  "dept": "Deli",
+  "emoji": "🫘",
+  "size": "454 g",
+  "price": 4.99,
+  "was": null,
+  "per": null,
+  "stock": 40,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 62,
+  "isNew": true,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Chickpeas, tahini, lemon and garlic.",
+  "nf": {
+   "cal": 70,
+   "fat": "5 g",
+   "carb": "4 g",
+   "prot": "2 g",
+   "sod": "130 mg"
+  },
+  "allergens": "Sesame"
+ },
+ {
+  "id": 20,
+  "name": "2% Milk",
+  "dept": "Dairy & Eggs",
+  "emoji": "🥛",
+  "size": "4 L bag",
+  "price": 6.19,
+  "was": null,
+  "per": null,
+  "stock": 80,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 97,
+  "isNew": false,
+  "brand": "Dairyland",
+  "origin": "Ontario",
+  "desc": "Fresh partly skimmed milk.",
+  "nf": {
+   "cal": 130,
+   "fat": "5 g",
+   "carb": "12 g",
+   "prot": "9 g",
+   "sod": "120 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 21,
+  "name": "Free-Run Large Eggs",
+  "dept": "Dairy & Eggs",
+  "emoji": "🥚",
+  "size": "dozen",
+  "price": 4.79,
+  "was": 5.29,
+  "per": null,
+  "stock": 50,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 94,
+  "isNew": false,
+  "brand": "Burnbrae Farms",
+  "origin": "Ontario",
+  "desc": "From free-run hens on Ontario farms.",
+  "nf": {
+   "cal": 70,
+   "fat": "5 g",
+   "carb": "0 g",
+   "prot": "6 g",
+   "sod": "70 mg"
+  },
+  "allergens": "Egg"
+ },
+ {
+  "id": 22,
+  "name": "Greek Yogurt, Plain",
+  "dept": "Dairy & Eggs",
+  "emoji": "🍶",
+  "size": "750 g",
+  "price": 5.99,
+  "was": null,
+  "per": null,
+  "stock": 26,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 72,
+  "isNew": false,
+  "brand": "Olympic",
+  "origin": "BC",
+  "desc": "Thick, 2% milk fat, high protein.",
+  "nf": {
+   "cal": 130,
+   "fat": "3 g",
+   "carb": "6 g",
+   "prot": "18 g",
+   "sod": "70 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 23,
+  "name": "Salted Butter",
+  "dept": "Dairy & Eggs",
+  "emoji": "🧈",
+  "size": "454 g",
+  "price": 6.49,
+  "was": null,
+  "per": null,
+  "stock": 44,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 79,
+  "isNew": false,
+  "brand": "Gay Lea",
+  "origin": "Ontario",
+  "desc": "Creamy Canadian butter.",
+  "nf": {
+   "cal": 100,
+   "fat": "11 g",
+   "carb": "0 g",
+   "prot": "0 g",
+   "sod": "90 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 24,
+  "name": "Oat Milk",
+  "dept": "Dairy & Eggs",
+  "emoji": "🌱",
+  "size": "1.75 L",
+  "price": 4.99,
+  "was": 5.49,
+  "per": null,
+  "stock": 38,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 66,
+  "isNew": true,
+  "brand": "Oatly",
+  "origin": "Sweden",
+  "desc": "Barista edition. Froths well.",
+  "nf": {
+   "cal": 120,
+   "fat": "5 g",
+   "carb": "16 g",
+   "prot": "3 g",
+   "sod": "100 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 25,
+  "name": "Extra Virgin Olive Oil",
+  "dept": "Pantry",
+  "emoji": "🫒",
+  "size": "1 L",
+  "price": 13.99,
+  "was": 15.99,
+  "per": null,
+  "stock": 20,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 68,
+  "isNew": false,
+  "brand": "Terra Delyssa",
+  "origin": "Tunisia",
+  "desc": "Cold-pressed, fruity and peppery.",
+  "nf": {
+   "cal": 120,
+   "fat": "14 g",
+   "carb": "0 g",
+   "prot": "0 g",
+   "sod": "0 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 26,
+  "name": "Spaghetti",
+  "dept": "Pantry",
+  "emoji": "🍝",
+  "size": "900 g",
+  "price": 2.99,
+  "was": null,
+  "per": null,
+  "stock": 75,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 73,
+  "isNew": false,
+  "brand": "Barilla",
+  "origin": "Italy",
+  "desc": "Bronze-cut durum wheat pasta.",
+  "nf": {
+   "cal": 200,
+   "fat": "1 g",
+   "carb": "42 g",
+   "prot": "7 g",
+   "sod": "0 mg"
+  },
+  "allergens": "Wheat"
+ },
+ {
+  "id": 27,
+  "name": "Pure Maple Syrup",
+  "dept": "Pantry",
+  "emoji": "🍁",
+  "size": "540 mL, amber",
+  "price": 11.99,
+  "was": null,
+  "per": null,
+  "stock": 16,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 63,
+  "isNew": false,
+  "brand": "Quebec Farms",
+  "origin": "Quebec",
+  "desc": "Grade A amber, rich taste.",
+  "nf": {
+   "cal": 210,
+   "fat": "0 g",
+   "carb": "53 g",
+   "prot": "0 g",
+   "sod": "10 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 28,
+  "name": "Basmati Rice",
+  "dept": "Pantry",
+  "emoji": "🍚",
+  "size": "2 kg",
+  "price": 7.49,
+  "was": 8.99,
+  "per": null,
+  "stock": 33,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 59,
+  "isNew": false,
+  "brand": "Tilda",
+  "origin": "India",
+  "desc": "Aged long-grain basmati.",
+  "nf": {
+   "cal": 160,
+   "fat": "0 g",
+   "carb": "36 g",
+   "prot": "3 g",
+   "sod": "0 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 29,
+  "name": "Whole Bean Coffee",
+  "dept": "Pantry",
+  "emoji": "☕",
+  "size": "340 g, medium roast",
+  "price": 12.99,
+  "was": null,
+  "per": null,
+  "stock": 24,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 81,
+  "isNew": true,
+  "brand": "Pilot Coffee",
+  "origin": "Toronto",
+  "desc": "Roasted in Toronto. Chocolate and caramel notes.",
+  "nf": {
+   "cal": 2,
+   "fat": "0 g",
+   "carb": "0 g",
+   "prot": "0 g",
+   "sod": "5 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 30,
+  "name": "Butter Chicken & Rice",
+  "dept": "Prepared Meals",
+  "emoji": "🍛",
+  "size": "450 g, ready in 4 min",
+  "price": 9.99,
+  "was": 11.99,
+  "per": null,
+  "stock": 12,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 91,
+  "isNew": false,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Made fresh in our kitchen. Heat and serve.",
+  "nf": {
+   "cal": 620,
+   "fat": "24 g",
+   "carb": "68 g",
+   "prot": "32 g",
+   "sod": "980 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 31,
+  "name": "Chicken Caesar Salad",
+  "dept": "Prepared Meals",
+  "emoji": "🥗",
+  "size": "300 g",
+  "price": 8.49,
+  "was": null,
+  "per": null,
+  "stock": 7,
+  "tags": [],
+  "local": false,
+  "pop": 76,
+  "isNew": false,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Romaine, grilled chicken, parmesan and croutons.",
+  "nf": {
+   "cal": 430,
+   "fat": "28 g",
+   "carb": "18 g",
+   "prot": "27 g",
+   "sod": "890 mg"
+  },
+  "allergens": "Wheat, Milk, Egg, Fish"
+ },
+ {
+  "id": 32,
+  "name": "Margherita Pizza",
+  "dept": "Prepared Meals",
+  "emoji": "🍕",
+  "size": "12 inch, take and bake",
+  "price": 10.99,
+  "was": null,
+  "per": null,
+  "stock": 10,
+  "tags": [],
+  "local": false,
+  "pop": 84,
+  "isNew": true,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Hand-stretched dough, tomato, mozzarella and basil.",
+  "nf": {
+   "cal": 270,
+   "fat": "10 g",
+   "carb": "33 g",
+   "prot": "12 g",
+   "sod": "560 mg"
+  },
+  "allergens": "Wheat, Milk"
+ },
+ {
+  "id": 33,
+  "name": "Veggie Sushi Box",
+  "dept": "Prepared Meals",
+  "emoji": "🍱",
+  "size": "12 pieces",
+  "price": 11.49,
+  "was": null,
+  "per": null,
+  "stock": 0,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 57,
+  "isNew": true,
+  "brand": "Sushi Fresh",
+  "origin": "Ontario",
+  "desc": "Avocado, cucumber and sweet potato rolls.",
+  "nf": {
+   "cal": 390,
+   "fat": "9 g",
+   "carb": "68 g",
+   "prot": "8 g",
+   "sod": "620 mg"
+  },
+  "allergens": "Soy, Sesame"
+ },
+ {
+  "id": 34,
+  "name": "Blueberries",
+  "dept": "Produce",
+  "emoji": "🫐",
+  "size": "pint (551 mL)",
+  "price": 4.99,
+  "was": 5.99,
+  "per": null,
+  "stock": 36,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 48,
+  "isNew": false,
+  "brand": "Berry Hill",
+  "origin": "USA",
+  "desc": "Plump, sweet blueberries. Rinse just before eating.",
+  "nf": {
+   "cal": 85,
+   "fat": "0.5 g",
+   "carb": "21 g",
+   "prot": "1.1 g",
+   "sod": "1 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 35,
+  "name": "Broccoli Crowns",
+  "dept": "Produce",
+  "emoji": "🥦",
+  "size": "per lb",
+  "price": 2.99,
+  "was": null,
+  "per": "lb",
+  "stock": 28,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 45,
+  "isNew": false,
+  "brand": "Holland Marsh",
+  "origin": "Ontario",
+  "desc": "Tight green florets, trimmed stems.",
+  "nf": {
+   "cal": 31,
+   "fat": "0.3 g",
+   "carb": "6 g",
+   "prot": "2.5 g",
+   "sod": "30 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 36,
+  "name": "Yellow Onions",
+  "dept": "Produce",
+  "emoji": "🧅",
+  "size": "3 lb bag",
+  "price": 2.99,
+  "was": null,
+  "per": null,
+  "stock": 55,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 44,
+  "isNew": false,
+  "brand": "Holland Marsh",
+  "origin": "Ontario",
+  "desc": "Kitchen staple for soups, stews and sautés.",
+  "nf": {
+   "cal": 44,
+   "fat": "0.1 g",
+   "carb": "10 g",
+   "prot": "1.2 g",
+   "sod": "4 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 37,
+  "name": "Red Grapes",
+  "dept": "Produce",
+  "emoji": "🍇",
+  "size": "per lb",
+  "price": 3.49,
+  "was": null,
+  "per": "lb",
+  "stock": 22,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 42,
+  "isNew": false,
+  "brand": "FreshMarket",
+  "origin": "Chile",
+  "desc": "Seedless and crisp.",
+  "nf": {
+   "cal": 104,
+   "fat": "0.2 g",
+   "carb": "27 g",
+   "prot": "1.1 g",
+   "sod": "3 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 38,
+  "name": "Organic Kale",
+  "dept": "Produce",
+  "emoji": "🌿",
+  "size": "bunch",
+  "price": 3.49,
+  "was": null,
+  "per": null,
+  "stock": 19,
+  "tags": [
+   "organic",
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 30,
+  "isNew": true,
+  "brand": "Earth Leaf",
+  "origin": "Ontario",
+  "desc": "Curly kale, grown without synthetic pesticides.",
+  "nf": {
+   "cal": 33,
+   "fat": "0.6 g",
+   "carb": "6 g",
+   "prot": "2.9 g",
+   "sod": "25 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 39,
+  "name": "Pork Tenderloin",
+  "dept": "Meat & Seafood",
+  "emoji": "🐖",
+  "size": "per lb (approx. 1.2 lb)",
+  "price": 5.99,
+  "was": null,
+  "per": "lb",
+  "stock": 16,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 40,
+  "isNew": false,
+  "brand": "Ontario Pork",
+  "origin": "Ontario",
+  "desc": "Lean and tender. Great roasted or grilled.",
+  "nf": {
+   "cal": 143,
+   "fat": "3.5 g",
+   "carb": "0 g",
+   "prot": "26 g",
+   "sod": "57 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 40,
+  "name": "Cod Fillets",
+  "dept": "Meat & Seafood",
+  "emoji": "🐠",
+  "size": "450 g, skinless",
+  "price": 12.49,
+  "was": null,
+  "per": null,
+  "stock": 11,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 35,
+  "isNew": true,
+  "brand": "Ocean Catch",
+  "origin": "Newfoundland",
+  "desc": "Mild, flaky white fish.",
+  "nf": {
+   "cal": 90,
+   "fat": "0.7 g",
+   "carb": "0 g",
+   "prot": "20 g",
+   "sod": "70 mg"
+  },
+  "allergens": "Fish"
+ },
+ {
+  "id": 41,
+  "name": "Prosciutto",
+  "dept": "Deli",
+  "emoji": "🥓",
+  "size": "per 100 g, sliced to order",
+  "price": 4.49,
+  "was": null,
+  "per": "100 g",
+  "stock": 24,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 38,
+  "isNew": false,
+  "brand": "FreshMarket Deli",
+  "origin": "Italy",
+  "desc": "Dry-cured, aged 18 months.",
+  "nf": {
+   "cal": 250,
+   "fat": "16 g",
+   "carb": "0 g",
+   "prot": "26 g",
+   "sod": "1900 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 42,
+  "name": "Fresh Mozzarella",
+  "dept": "Deli",
+  "emoji": "⚪",
+  "size": "200 g ball",
+  "price": 4.99,
+  "was": null,
+  "per": null,
+  "stock": 20,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 36,
+  "isNew": false,
+  "brand": "Ontario Dairy Co.",
+  "origin": "Ontario",
+  "desc": "Soft and milky. Perfect for caprese.",
+  "nf": {
+   "cal": 85,
+   "fat": "6 g",
+   "carb": "1 g",
+   "prot": "6 g",
+   "sod": "180 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 43,
+  "name": "Cottage Cheese",
+  "dept": "Dairy & Eggs",
+  "emoji": "🥣",
+  "size": "500 g, 2%",
+  "price": 4.29,
+  "was": null,
+  "per": null,
+  "stock": 30,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 34,
+  "isNew": false,
+  "brand": "Dairyland",
+  "origin": "Ontario",
+  "desc": "Small curd, high protein.",
+  "nf": {
+   "cal": 90,
+   "fat": "2.5 g",
+   "carb": "4 g",
+   "prot": "12 g",
+   "sod": "390 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 44,
+  "name": "Whipping Cream",
+  "dept": "Dairy & Eggs",
+  "emoji": "🍦",
+  "size": "473 mL, 35%",
+  "price": 3.99,
+  "was": null,
+  "per": null,
+  "stock": 25,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 32,
+  "isNew": false,
+  "brand": "Dairyland",
+  "origin": "Ontario",
+  "desc": "Whips up thick and stable.",
+  "nf": {
+   "cal": 50,
+   "fat": "5 g",
+   "carb": "0 g",
+   "prot": "0 g",
+   "sod": "5 mg"
+  },
+  "allergens": "Milk"
+ },
+ {
+  "id": 45,
+  "name": "Canned Chickpeas",
+  "dept": "Pantry",
+  "emoji": "🥫",
+  "size": "540 mL",
+  "price": 1.49,
+  "was": null,
+  "per": null,
+  "stock": 90,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 33,
+  "isNew": false,
+  "brand": "Unico",
+  "origin": "Canada",
+  "desc": "Ready to use. Rinse and drain.",
+  "nf": {
+   "cal": 120,
+   "fat": "2 g",
+   "carb": "20 g",
+   "prot": "6 g",
+   "sod": "290 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 46,
+  "name": "Dark Chocolate Bar",
+  "dept": "Pantry",
+  "emoji": "🍫",
+  "size": "100 g, 70% cacao",
+  "price": 3.99,
+  "was": 4.49,
+  "per": null,
+  "stock": 48,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": false,
+  "pop": 46,
+  "isNew": false,
+  "brand": "Camino",
+  "origin": "Canada",
+  "desc": "Fair-trade organic dark chocolate.",
+  "nf": {
+   "cal": 220,
+   "fat": "16 g",
+   "carb": "16 g",
+   "prot": "3 g",
+   "sod": "5 mg"
+  },
+  "allergens": "May contain milk"
+ },
+ {
+  "id": 47,
+  "name": "Wildflower Honey",
+  "dept": "Pantry",
+  "emoji": "🍯",
+  "size": "500 g",
+  "price": 9.99,
+  "was": null,
+  "per": null,
+  "stock": 14,
+  "tags": [
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 31,
+  "isNew": false,
+  "brand": "Ontario Bee Co.",
+  "origin": "Ontario",
+  "desc": "Raw, unpasteurized honey.",
+  "nf": {
+   "cal": 60,
+   "fat": "0 g",
+   "carb": "17 g",
+   "prot": "0 g",
+   "sod": "0 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 48,
+  "name": "Rolled Oats",
+  "dept": "Pantry",
+  "emoji": "🌾",
+  "size": "1 kg",
+  "price": 4.49,
+  "was": null,
+  "per": null,
+  "stock": 40,
+  "tags": [
+   "vegan"
+  ],
+  "local": false,
+  "pop": 39,
+  "isNew": false,
+  "brand": "Quaker",
+  "origin": "Canada",
+  "desc": "Large flake, cooks in 5 minutes.",
+  "nf": {
+   "cal": 150,
+   "fat": "3 g",
+   "carb": "27 g",
+   "prot": "5 g",
+   "sod": "0 mg"
+  },
+  "allergens": "May contain wheat"
+ },
+ {
+  "id": 49,
+  "name": "Red Lentil Soup",
+  "dept": "Prepared Meals",
+  "emoji": "🍲",
+  "size": "500 mL",
+  "price": 6.99,
+  "was": null,
+  "per": null,
+  "stock": 13,
+  "tags": [
+   "vegan",
+   "gluten-free"
+  ],
+  "local": true,
+  "pop": 37,
+  "isNew": true,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Red lentils, cumin and lemon. Heat and serve.",
+  "nf": {
+   "cal": 260,
+   "fat": "6 g",
+   "carb": "38 g",
+   "prot": "14 g",
+   "sod": "720 mg"
+  },
+  "allergens": "None"
+ },
+ {
+  "id": 50,
+  "name": "Beef Lasagna",
+  "dept": "Prepared Meals",
+  "emoji": "🍝",
+  "size": "1 kg, serves 4",
+  "price": 13.49,
+  "was": null,
+  "per": null,
+  "stock": 8,
+  "tags": [],
+  "local": true,
+  "pop": 43,
+  "isNew": false,
+  "brand": "FreshMarket Kitchen",
+  "origin": "Ontario",
+  "desc": "Layered with ricotta and slow-cooked beef ragù.",
+  "nf": {
+   "cal": 410,
+   "fat": "19 g",
+   "carb": "35 g",
+   "prot": "24 g",
+   "sod": "880 mg"
+  },
+  "allergens": "Wheat, Milk, Egg"
+ }
+]

@@ -306,10 +306,15 @@ test.describe('GP-8 Order confirmation, tracking and history', () => {
     await expect(page.getByRole('list', { name: 'Order status' }).getByRole('listitem')).toHaveText(['Placed', 'Picking', 'Ready for pickup', 'Completed']);
   });
 
-  test('order history lists past orders and survives sign-out', async ({ store, page }) => {
+  test('order history is kept on the server: it survives a reload and signing out', async ({ store, page }) => {
     const done = await placeDeliveryOrder(store);
     await done.getByRole('button', { name: 'Continue shopping' }).click();
-    await page.reload(); // signed out, cart empty
+    await page.reload();
+    await expect(store.accountButton).toHaveText('Hi, Demo'); // the session survives a reload
+    await expect(store.cartCount).toHaveText('0');
+    await store.accountButton.click();
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    await expect(store.accountButton).toHaveText('Sign in');
     await store.signIn(DEMO.email, DEMO.password);
     await store.accountButton.click();
     await page.getByRole('button', { name: /^Your orders/ }).click();
@@ -333,7 +338,8 @@ test.describe('GP-8 Order confirmation, tracking and history', () => {
     await page.getByRole('button', { name: 'View receipt' }).click();
     const receipt = page.getByRole('dialog', { name: 'Order FM-1001' });
     await expect(receipt.getByRole('heading')).toHaveText('Order FM-1001');
-    await expect(receipt).toContainText('Placed Oct 14, 2026');
+    // The server records when the order was placed (its own clock, not the test's fixed one)
+    await expect(receipt.locator('.sub')).toHaveText(/^Placed [A-Z][a-z]{2} \d{1,2}, \d{4}$/);
     await expect(receipt.locator('.grand')).toHaveText('Total$48.32');
   });
 

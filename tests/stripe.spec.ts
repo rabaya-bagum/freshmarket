@@ -1,5 +1,4 @@
 import { Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { test, expect, DEMO } from './fixtures';
 
 // GP-7 with real payments switched on. Stripe.js and the /api endpoints are replaced
@@ -193,11 +192,4 @@ test.describe('GP-7 Stripe payments', () => {
     await expect(co.getByLabel('Card number')).toBeVisible();
     await expect(co.getByTestId('stripe-element')).toHaveCount(0);
   });
-});
-
-test('server price list matches the store’s prices', async ({ store, page }) => {
-  await expect(store.title).toHaveText('All departments');
-  const prices = JSON.parse(readFileSync('data/prices.json', 'utf8'));
-  const shop = await page.evaluate(() => (window as any).FM_PRODUCTS.map((p) => ({ id: p.id, name: p.name, price: p.price, per: p.per || null })));
-  expect(shop).toEqual(prices);
 });

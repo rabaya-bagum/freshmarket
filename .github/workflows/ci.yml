@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - name: Payment server unit tests
+      - name: Server unit tests (pricing, payments, products, accounts, carts, orders)
         run: npm run test:api
 
   browser:

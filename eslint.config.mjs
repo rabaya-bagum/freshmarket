@@ -1,9 +1,23 @@
-// Lint rules for the test suite. CI fails if any rule here is broken.
+// Lint rules for the app and the test suite. CI fails if any rule here is broken.
 import tseslint from 'typescript-eslint';
 import playwright from 'eslint-plugin-playwright';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
+  { ignores: ['dist/**', 'node_modules/**'] },
   ...tseslint.configs.recommended,
+  {
+    // The React store
+    files: ['src/**/*.{js,jsx}'],
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+    plugins: { 'react-hooks': reactHooks },
+    rules: { 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' },
+  },
+  {
+    // The Node server is CommonJS
+    files: ['server/**/*.js', 'api/**/*.js', 'api-tests/**/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   {
     files: ['tests/**/*.ts', 'tests-smoke/**/*.ts'],
     ...playwright.configs['flat/recommended'],
