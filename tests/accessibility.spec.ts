@@ -241,13 +241,20 @@ test.describe('Keyboard access', () => {
 
   test('Tab reaches the header controls in order, with a visible focus ring', async ({ page }) => {
     const order: string[] = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       await page.keyboard.press('Tab');
       order.push(await page.evaluate(() => (document.activeElement as HTMLElement).getAttribute('aria-label') || (document.activeElement as HTMLElement).textContent!.trim()));
     }
-    expect(order.slice(0, 4)).toEqual(['Skip to products', 'FreshMarket home', 'Search products', 'Sign in']);
+    expect(order.slice(0, 5)).toEqual(['Skip to products', 'How this store works', 'FreshMarket home', 'Search products', 'Sign in']);
     const ring = await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle);
     expect(ring).not.toBe('none');
+  });
+
+  test('the banner links to the plain-English presentation, in a new tab', async ({ page }) => {
+    const link = page.getByRole('link', { name: 'How this store works' });
+    await expect(link).toHaveAttribute('href', 'https://claude.ai/artifact/Hxxzggva5PS6u66tyBgJeh');
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   test('skip link jumps straight to the products', async ({ page }) => {
