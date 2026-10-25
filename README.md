@@ -72,7 +72,7 @@ Each product looks like this:
 ```
 
 - `page` defaults to 1 and `per_page` to 10 (maximum 50). Both must be positive whole numbers, or the API answers `400`. A page past the end returns an empty `data` list, not an error.
-- An id that is not a whole number gets `400`. An id with no product gets `404`.
+- An id that is not a whole number (for example `/api/products/a`) gets a `500` server error. An id with no product gets `404`.
 - Only `GET` is allowed. Other methods get `405`.
 - Responses are cached for 60 seconds (`Cache-Control: public, max-age=60`).
 
