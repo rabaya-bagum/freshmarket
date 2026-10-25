@@ -5,7 +5,7 @@ import { Modal, Steps } from './Dialogs';
 import { ApiError, api } from './api';
 import { DELIVERY_FEE, DELIVERY_MIN, FREE_DELIVERY, HOLD_MIN, calc, cardError, chargeCents, dayStart, fmtDay, fmtTime, hh, money, r2, slotLabel, slotsFor } from './lib';
 
-export const newCheckout = () => ({ step: 'fulfil', mode: 'delivery', street: '', postal: '', zipOk: false, zipMsg: null, day: 0, slot: null, held: null, pay: 'card', card: { name: '', num: '', exp: '', cvc: '' }, err: '', anim: true });
+export const newCheckout = () => ({ step: 'fulfil', mode: 'delivery', street: '', postal: '', zipOk: false, zipMsg: null, day: 0, slot: null, held: null, pay: 'card', card: { name: '', num: '', exp: '', cvc: '' }, err: '', anim: true, rev: 0 });
 
 // ---- Stripe.js loads once, only when a shopper reaches payment with Stripe switched on
 let stripeJs = null, stripeEls = null;
@@ -71,7 +71,7 @@ function Fulfil({ s, c, t, update }) {
     let n = c;
     if (c.mode === 'delivery' && !c.zipOk && c.postal.trim()) n = { ...c, ...checkZip(c, store) };
     const err = validateFulfil(n, calc(s.cartItems(), n.mode));
-    update({ ...n, err, step: err ? 'fulfil' : 'pay' });
+    update({ ...n, err, step: err ? 'fulfil' : 'pay' }, Boolean(err));
   };
   return (
     <>
@@ -89,11 +89,11 @@ function Fulfil({ s, c, t, update }) {
             <button type="button" className="ghost" data-co="zip" onClick={() => update({ ...checkZip(c, store), err: '' })}>Check</button>
           </div>
           {c.zipMsg && (c.zipMsg.kind === 'err' ? <p className="err" role="alert" id="co-zip">{c.zipMsg.text}</p> : <p className="okmsg" id="co-zip">{c.zipMsg.text}</p>)}
-          <p className="note">Delivered from {store.name} · {money(DELIVERY_FEE)} fee, free over {money(FREE_DELIVERY)} · minimum order {money(DELIVERY_MIN)}</p>
-          {min && <p className="err" role="alert" id="co-min">Delivery needs a minimum order of {money(DELIVERY_MIN)}. Add {money(DELIVERY_MIN - t.sub)} more or choose pickup.</p>}
+          <p className="note">{`Delivered from ${store.name} · ${money(DELIVERY_FEE)} fee, free over ${money(FREE_DELIVERY)} · minimum order ${money(DELIVERY_MIN)}`}</p>
+          {min && <p className="err" role="alert" id="co-min">{`Delivery needs a minimum order of ${money(DELIVERY_MIN)}. Add ${money(DELIVERY_MIN - t.sub)} more or choose pickup.`}</p>}
         </>
       ) : (
-        <p className="pick"><b>FreshMarket {store.name}</b><br />{store.addr}<br /><span className="note">Park in a pickup bay and tap “I&apos;m here” in your confirmation email. Free.</span></p>
+        <p className="pick"><b>{`FreshMarket ${store.name}`}</b><br />{store.addr}<br /><span className="note">Park in a pickup bay and tap “I&apos;m here” in your confirmation email. Free.</span></p>
       )}
       <h3>Choose a time</h3>
       <div className="days" role="group" aria-label="Day">
@@ -104,11 +104,11 @@ function Fulfil({ s, c, t, update }) {
       <div className="slots" role="group" aria-label="Time">
         {slots.length ? slots.map((x) => (
           <button type="button" key={x.h} data-slot={x.h} disabled={x.full} aria-pressed={c.slot === x.h} onClick={() => update({ slot: x.h, held: Date.now() + HOLD_MIN * 60e3, err: '' })}>
-            {hh(x.h)} – {hh(x.h + 1)}{x.full && <small>Full</small>}
+            {`${hh(x.h)} – ${hh(x.h + 1)}`}{x.full && <small>Full</small>}
           </button>
         )) : <p className="note">No times left today. Choose another day.</p>}
       </div>
-      {c.slot !== null && c.held && <p className="okmsg" id="co-hold">We&apos;re holding {slotLabel(c.day, c.slot)} for you until {fmtTime(new Date(c.held))}.</p>}
+      {c.slot !== null && c.held && <p className="okmsg" id="co-hold">{`We're holding ${slotLabel(c.day, c.slot)} for you until ${fmtTime(new Date(c.held))}.`}</p>}
       {c.err && <p className="err" role="alert" id="co-err">{c.err}</p>}
       <div className="cofoot"><span>Estimated total <b>{money(t.total)}</b></span><button className="checkout" type="button" data-co="next" onClick={next}>Continue to payment</button></div>
     </>
@@ -170,7 +170,7 @@ function Pay({ s, c, t, update, pay }) {
     if (pay.stripe) return stripePay();
     if (c.pay === 'card') {
       const err = cardError(c.card);
-      if (err) return update({ err });
+      if (err) return update({ err }, true);
     }
     const num = c.card.num.replace(/\s|-/g, '');
     setBusy(true);
@@ -178,7 +178,7 @@ function Pay({ s, c, t, update, pay }) {
       await order(c.pay === 'card' ? `card ending in ${num.slice(-4)}` : c.pay === 'apple' ? 'Apple Pay' : 'Google Pay');
     } catch (err) {
       setBusy(false);
-      update({ err: err.message });
+      update({ err: err.message }, true);
     }
   }
 
@@ -194,15 +194,15 @@ function Pay({ s, c, t, update, pay }) {
           <span id="co-where">{where}</span>
           <button type="button" className="link" data-co="back" onClick={() => update({ step: 'fulfil', err: '' })}>Change</button>
         </div>
-        <ul className="items">{t.items.map(({ p, q }) => <li key={p.id}><span>{p.emoji} {p.name} × {q}</span><span>{money(p.price * q)}</span></li>)}</ul>
+        <ul className="items">{t.items.map(({ p, q }) => <li key={p.id}><span>{`${p.emoji} ${p.name} × ${q}`}</span><span>{money(p.price * q)}</span></li>)}</ul>
         <div className="totals co-totals">
           <div><span>Subtotal</span><span>{money(t.sub)}</span></div>
-          {t.saved > 0 && <div className="save"><span>You save</span><span>−{money(t.saved)}</span></div>}
+          {t.saved > 0 && <div className="save"><span>You save</span><span>{`−${money(t.saved)}`}</span></div>}
           <div><span>Est. HST</span><span>{money(t.hst)}</span></div>
           <div><span>{c.mode === 'delivery' ? 'Delivery fee' : 'Pickup'}</span><span>{t.fee ? money(t.fee) : 'Free'}</span></div>
           <div className="grand"><span>Total</span><span>{money(t.total)}</span></div>
         </div>
-        {t.weighted && <p className="note" id="co-preauth">Some items are sold by weight. We&apos;ll pre-authorize {money(r2(t.total * 1.1))} and charge the actual amount when your order is picked.</p>}
+        {t.weighted && <p className="note" id="co-preauth">{`Some items are sold by weight. We'll pre-authorize ${money(r2(t.total * 1.1))} and charge the actual amount when your order is picked.`}</p>}
       </div>
       <form data-form="pay" noValidate onSubmit={submit}>
         {pay.stripe ? (
@@ -228,7 +228,7 @@ function Pay({ s, c, t, update, pay }) {
                 </div>
                 <p className="note">Demo: use 4242 4242 4242 4242 to approve, 4000 0000 0000 0002 to see a decline. Any future expiry and any 3 digits.</p>
               </>
-            ) : <p className="note">You&apos;ll confirm the payment in {c.pay === 'apple' ? 'Apple Pay' : 'Google Pay'}.</p>}
+            ) : <p className="note">{`You'll confirm the payment in ${c.pay === 'apple' ? 'Apple Pay' : 'Google Pay'}.`}</p>}
           </>
         )}
         {c.err && <p className="err" id="co-err" role="alert">{c.err}</p>}

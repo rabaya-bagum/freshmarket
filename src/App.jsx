@@ -103,10 +103,15 @@ export default function App() {
   // ---- account
   const authView = (mode = 'in', msg = null, bad = '') => setLayer({ type: 'auth', mode, msg, bad });
   const authQueue = useRef(Promise.resolve());
-  const auth = (kind, fields) => (authQueue.current = authQueue.current.then(() => authStep(kind, fields)));
-  // A server reply only changes the dialog if the shopper is still on the screen it answers
-  const reply = (from, mode, msg) => setLayer((cur) => (cur && cur.type === 'auth' && cur.mode === from ? { type: 'auth', mode, msg, bad: '' } : cur));
-  async function authStep(kind, { name, email, password }) {
+  const authSeq = useRef(0);
+  const auth = (kind, fields) => {
+    const seq = ++authSeq.current;
+    return (authQueue.current = authQueue.current.then(() => authStep(kind, fields, seq)));
+  };
+  // A server reply only changes the dialog if it answers the latest attempt and the shopper is still on that screen.
+  // `sent` lets the form clear what was submitted (see AuthDialog).
+  const reply = (seq, from, mode, msg, sent) => seq === authSeq.current && setLayer((cur) => (cur && cur.type === 'auth' && cur.mode === from ? { type: 'auth', mode, msg, bad: '', rev: (cur.rev || 0) + 1, sent } : cur));
+  async function authStep(kind, { name, email, password }, seq) {
     const mode = kind;
     if (kind === 'in') {
       // GP-81: never send a sign-in unless both fields are filled in and the email looks valid
@@ -119,21 +124,21 @@ export default function App() {
       try {
         signedIn(await api.signIn(email, password, cart));
       } catch (e) {
-        reply('in', 'in', { kind: 'err', text: e.message });
+        reply(seq, 'in', 'in', { kind: 'err', text: e.message }, { email, password });
       }
     } else if (kind === 'up') {
       try {
         await api.signUp(name, email, password);
-        reply('up', 'in', { kind: 'ok', text: `Account created. We sent a verification link to ${email}. (Demo: sign in twice to simulate verifying.)` });
+        reply(seq, 'up', 'in', { kind: 'ok', text: `Account created. We sent a verification link to ${email}. (Demo: sign in twice to simulate verifying.)` });
       } catch (e) {
-        reply('up', 'up', { kind: 'err', text: e.message });
+        reply(seq, 'up', 'up', { kind: 'err', text: e.message }, { email, password });
       }
     } else if (kind === 'reset') {
       try {
         await api.reset(email);
-        reply('reset', 'in', { kind: 'ok', text: `If an account exists for ${email}, a reset link is on its way.` });
+        reply(seq, 'reset', 'in', { kind: 'ok', text: `If an account exists for ${email}, a reset link is on its way.` });
       } catch (e) {
-        reply('reset', 'reset', { kind: 'err', text: e.message });
+        reply(seq, 'reset', 'reset', { kind: 'err', text: e.message });
       }
     }
   }
@@ -191,7 +196,8 @@ export default function App() {
       toast(`Added ${added} item${added === 1 ? '' : 's'} to your cart${skipped ? `. ${skipped} item${skipped === 1 ? ' is' : 's are'} out of stock` : ''}.`);
     },
   };
-  const updateCo = (patch) => setCo((c) => ({ ...c, ...patch, anim: false }));
+  // redraw: start the checkout screen afresh (focus back on its first field), as after a refused step
+  const updateCo = (patch, redraw = false) => setCo((c) => ({ ...c, ...patch, anim: false, rev: c.rev + (redraw ? 1 : 0) }));
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') setLayer(null); };
@@ -210,12 +216,12 @@ export default function App() {
 
   const card = (p) => (
     <article className="card" key={p.id}>
-      {p.was && <span className="badge">Save {money(p.was - p.price)}</span>}
+      {p.was && <span className="badge">{`Save ${money(p.was - p.price)}`}</span>}
       <button className="thumb" style={{ background: TINT[p.dept] }} data-open={p.id} aria-label={`View ${p.name}`} onClick={() => setLayer({ type: 'product', id: p.id })}>{p.emoji}</button>
       {p.local ? <span className="local">Ontario grown</span> : <span className="local" style={{ color: 'var(--muted)' }}>{p.brand}</span>}
       <button className="pname" data-open={p.id} onClick={() => setLayer({ type: 'product', id: p.id })}>{p.name}</button>
       <span className="size">{p.size}</span>
-      <div className="price"><b>{money(p.price)}{p.per && <span className="unit"> /{p.per}</span>}</b>{p.was && <s>{money(p.was)}</s>}</div>
+      <div className="price"><b>{money(p.price)}{p.per && <span className="unit">{` /${p.per}`}</span>}</b>{p.was && <s>{money(p.was)}</s>}</div>
       <QtyCtl s={s} p={p} />
     </article>
   );
@@ -229,7 +235,7 @@ export default function App() {
 
   const openProduct = layer?.type === 'product' && byId.get(layer.id);
   const openOrder = layer?.type === 'order' && (orders.find((o) => o.id === layer.id) || layer.o);
-  const layerKey = layer && [layer.type, layer.mode, layer.id, layer.type === 'checkout' && co.step].filter(Boolean).join(':');
+  const layerKey = layer && [layer.type, layer.mode, layer.id, layer.type === 'checkout' && `${co.step}${co.rev}`].filter(Boolean).join(':');
 
   return (
     <>
@@ -246,8 +252,8 @@ export default function App() {
           <div className="store">
             <label htmlFor="storeSel">Shopping at</label>{' '}
             <select id="storeSel" aria-label="Choose your store" value={storeIdx} onChange={(e) => chooseStore(+e.target.value)}>
-              {STORES.map((x, i) => <option value={i} key={x.name}>FreshMarket {x.city} · {x.name}</option>)}
-            </select>{' '}· <span id="storeHours">Open until {store.close}</span>
+              {STORES.map((x, i) => <option value={i} key={x.name}>{`FreshMarket ${x.city} · ${x.name}`}</option>)}
+            </select>{' '}· <span id="storeHours">{`Open until ${store.close}`}</span>
           </div>
           <nav className="depts" id="depts" aria-label="Departments">
             <button data-dept="" aria-pressed={!f.dept} onClick={() => { setF((x) => ({ ...x, dept: null, q: '', shown: 12 })); setSearchReset((n) => n + 1); }}>All</button>

@@ -1,5 +1,5 @@
 // The screens that open on top of the store: cart, product, account, orders.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TINT, STATUS, money, calc } from './lib';
 
 export function Modal({ label, panelClass = '', onClose, children }) {
@@ -45,7 +45,7 @@ export function CartDrawer({ s }) {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600 }}>{p.name}</div>
                 <div className="size">{p.size}</div>
-                {q > s.stockOf(p) && <div className="err" role="alert">Only {s.stockOf(p)} left</div>}
+                {q > s.stockOf(p) && <div className="err" role="alert">{`Only ${s.stockOf(p)} left`}</div>}
                 <div className="qty">
                   <button data-dec={p.id} aria-label="Decrease" onClick={() => s.setQty(p.id, q - 1)}>−</button>
                   <span>{q}</span>
@@ -62,10 +62,10 @@ export function CartDrawer({ s }) {
         {items.length > 0 && (
           <div className="totals">
             <div><span>Subtotal</span><span>{money(t.sub)}</span></div>
-            {t.saved > 0 && <div className="save"><span>You save</span><span>−{money(t.saved)}</span></div>}
+            {t.saved > 0 && <div className="save"><span>You save</span><span>{`−${money(t.saved)}`}</span></div>}
             <div><span>Est. HST</span><span>{money(t.hst)}</span></div>
             <div><span>Delivery fee</span><span>{t.fee ? money(t.fee) : 'Free'}</span></div>
-            {t.fee > 0 && <div className="note">Add {money(50 - t.sub)} more for free delivery.</div>}
+            {t.fee > 0 && <div className="note">{`Add ${money(50 - t.sub)} more for free delivery.`}</div>}
             <div className="grand"><span>Estimated total</span><span>{money(t.total)}</span></div>
             <button className="checkout" data-checkout="" onClick={s.startCheckout}>Continue to checkout</button>
             {!s.user && <div className="note">Sign in to save your cart across devices.</div>}
@@ -85,14 +85,14 @@ export function ProductDialog({ s, p }) {
       <div className="pd">
         <div className="thumb" style={{ background: TINT[p.dept] }}>{p.emoji}</div>
         <div style={{ minWidth: 0 }}>
-          <span className="local">{p.local ? 'Ontario grown · ' : ''}{p.origin}</span>
+          <span className="local">{(p.local ? 'Ontario grown · ' : '') + p.origin}</span>
           <h2>{p.name}</h2>
-          <div className="size">{p.brand} · {p.size}</div>
+          <div className="size">{`${p.brand} · ${p.size}`}</div>
           <div className="price" style={{ marginTop: 10 }}>
-            <b style={{ fontSize: 26 }}>{money(p.price)}{p.per && <span className="unit"> /{p.per}</span>}</b>
+            <b style={{ fontSize: 26 }}>{money(p.price)}{p.per && <span className="unit">{` /${p.per}`}</span>}</b>
             {p.was && <><s>{money(p.was)}</s><span className="badge" style={{ position: 'static' }}>Sale</span></>}
           </div>
-          {p.per === 'lb' && <div className="unit">{money(p.price * 2.20462)} /kg</div>}
+          {p.per === 'lb' && <div className="unit">{`${money(p.price * 2.20462)} /kg`}</div>}
           <div className="tags">{p.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
           <p style={{ margin: '6px 0' }}>{p.desc}</p>
           <div className={`stock ${st[0]}`}>{st[1]}</div>
@@ -121,15 +121,26 @@ const Msg = ({ m }) => !m ? null
 export function AuthDialog({ s, view }) {
   const { mode, msg, bad } = view;
   const [f, setF] = useState({ nm: '', em: '', pw: '' });
+  const formRef = useRef(null);
+  const typedSinceSubmit = useRef(false);
+  // The raw input event, which fires even when the new text equals the old (React's onChange then stays quiet)
+  const typed = () => { typedSinceSubmit.current = true; };
+  // After a refused attempt the form starts afresh with focus on its first field, as the store always has,
+  // unless something was typed while the answer was on its way: that is kept.
+  useEffect(() => {
+    if (!view.rev || !view.sent || typedSinceSubmit.current) return;
+    setF({ nm: '', em: '', pw: '' });
+    formRef.current?.querySelector('input')?.focus();
+  }, [view.rev, view.sent]);
   const field = (id) => ({ id, value: f[id], onChange: (e) => setF({ ...f, [id]: e.target.value }) });
   const invalid = (id) => (bad === id ? { 'aria-invalid': 'true', 'aria-describedby': 'auth-err' } : {});
 
   if (s.user) {
     return (
       <Modal label="Account" panelClass="auth" onClose={s.close}>
-        <h2>Hi, {s.user.name}</h2><p className="sub">{s.user.email}</p><p>Your cart is saved to your account.</p>
+        <h2>{`Hi, ${s.user.name}`}</h2><p className="sub">{s.user.email}</p><p>Your cart is saved to your account.</p>
         <div className="cofoot" style={{ justifyContent: 'flex-start' }}>
-          <button className="ghost" data-orders="" onClick={s.showOrders}>Your orders{s.orders.length ? ` (${s.orders.length})` : ''}</button>
+          <button className="ghost" data-orders="" onClick={s.showOrders}>{`Your orders${s.orders.length ? ` (${s.orders.length})` : ''}`}</button>
           <button className="ghost" data-logout="" onClick={s.signOut}>Sign out</button>
         </div>
       </Modal>
@@ -139,6 +150,7 @@ export function AuthDialog({ s, view }) {
   // Every submit counts, in order (s.auth queues them), so quick repeated attempts behave like slow ones
   const submit = (kind) => (e) => {
     e.preventDefault();
+    typedSinceSubmit.current = false;
     s.auth(kind, { name: f.nm.trim(), email: f.em.trim().toLowerCase(), password: f.pw });
   };
   const tab = (m, l) => <button role="tab" data-mode={m} aria-selected={mode === m} onClick={() => s.authMode(m)}>{l}</button>;
@@ -149,7 +161,7 @@ export function AuthDialog({ s, view }) {
       {mode !== 'reset' ? <div className="tabs" role="tablist">{tab('in', 'Sign in')}{tab('up', 'Create account')}</div> : <p className="sub">We&apos;ll email you a link to set a new password.</p>}
       <Msg m={msg} />
       {mode === 'in' && (
-        <form data-form="in" noValidate onSubmit={submit('in')}>
+        <form data-form="in" noValidate onSubmit={submit('in')} ref={formRef} onInput={typed}>
           <label>Email<input {...field('em')} type="email" required autoComplete="email" {...invalid('em')} /></label>
           <label>Password<input {...field('pw')} type="password" required autoComplete="current-password" {...invalid('pw')} /></label>
           <button className="link" type="button" data-mode="reset" onClick={() => s.authMode('reset')}>Forgot password?</button>
@@ -157,7 +169,7 @@ export function AuthDialog({ s, view }) {
         </form>
       )}
       {mode === 'up' && (
-        <form data-form="up" onSubmit={submit('up')}>
+        <form data-form="up" onSubmit={submit('up')} ref={formRef} onInput={typed}>
           <label>Full name<input {...field('nm')} required autoComplete="name" /></label>
           <label>Email<input {...field('em')} type="email" required autoComplete="email" /></label>
           <label>Password<input {...field('pw')} type="password" required minLength={8} autoComplete="new-password" /></label>
@@ -196,21 +208,21 @@ export function OrderView({ s, o, fresh }) {
     <Modal label={'Order ' + o.id} panelClass="co still" onClose={s.close}>
       {fresh && <Steps cur={2} />}
       <h2>{fresh ? `Order ${o.id} confirmed` : `Order ${o.id}`}</h2>
-      {fresh ? <p className="okmsg">We emailed a confirmation to {o.email}.</p> : <p className="sub">Placed {dateLong(o.created)}</p>}
+      {fresh ? <p className="okmsg">{`We emailed a confirmation to ${o.email}.`}</p> : <p className="sub">{`Placed ${dateLong(o.created)}`}</p>}
       <ol className="track" aria-label="Order status">
         {flow.map((n, i) => <li key={n} className={i < o.status ? 'done' : i === o.status ? 'cur' : undefined} aria-current={i === o.status ? 'step' : undefined}>{n}</li>)}
       </ol>
       <div className="review">
         <div><span className="lbl">{o.mode === 'delivery' ? 'Delivery' : 'Pickup'}</span><b>{o.when}</b><span>{o.where}</span></div>
-        <ul className="items">{o.items.map((x) => <li key={x.id}><span>{x.emoji} {x.name} × {x.q}</span><span>{money(x.price * x.q)}</span></li>)}</ul>
+        <ul className="items">{o.items.map((x) => <li key={x.id}><span>{`${x.emoji} ${x.name} × ${x.q}`}</span><span>{money(x.price * x.q)}</span></li>)}</ul>
         <div className="totals co-totals">
           <div><span>Subtotal</span><span>{money(o.sub)}</span></div>
-          {o.saved > 0 && <div className="save"><span>You save</span><span>−{money(o.saved)}</span></div>}
+          {o.saved > 0 && <div className="save"><span>You save</span><span>{`−${money(o.saved)}`}</span></div>}
           <div><span>HST</span><span>{money(o.hst)}</span></div>
           <div><span>{o.mode === 'delivery' ? 'Delivery fee' : 'Pickup'}</span><span>{o.fee ? money(o.fee) : 'Free'}</span></div>
           <div className="grand"><span>Total</span><span>{money(o.total)}</span></div>
         </div>
-        <p className="note">Paid with {o.paidWith}.</p>
+        <p className="note">{`Paid with ${o.paidWith}.`}</p>
       </div>
       <div className="cofoot">
         {o.status < flow.length - 1 && <button type="button" className="ghost" data-advance={o.id} onClick={() => s.advance(o.id)}>Advance status (demo)</button>}
@@ -230,7 +242,7 @@ export function OrdersList({ s }) {
         <ul className="orders">
           {os.map((o) => (
             <li key={o.id}>
-              <div><b>{o.id}</b><span className="note">{new Date(o.created).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })} · {o.items.reduce((a, x) => a + x.q, 0)} items · {money(o.total)}</span></div>
+              <div><b>{o.id}</b><span className="note">{`${new Date(o.created).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })} · ${o.items.reduce((a, x) => a + x.q, 0)} items · ${money(o.total)}`}</span></div>
               <span className="pill">{STATUS[o.mode][o.status]}</span>
               <div className="oact">
                 <button type="button" className="ghost" data-order={o.id} onClick={() => s.showOrder(o.id)}>View receipt</button>
