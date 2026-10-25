@@ -63,9 +63,12 @@ describe('GET /api/products/:id', () => {
     assert.equal(r.body.error, 'Product 999999 not found.');
   });
 
-  test('non-numeric id is 400', () => {
-    assert.equal(call(one, { query: { id: 'abc' } }).statusCode, 400);
-    assert.equal(call(one, { query: { id: '1.5' } }).statusCode, 400);
+  test('non-numeric id is a server error', () => {
+    const r = call(one, { query: { id: 'a' } });
+    assert.equal(r.statusCode, 500);
+    assert.equal(r.body.error, 'Server error: product id must be a whole number.');
+    assert.equal(call(one, { query: { id: 'abc' } }).statusCode, 500);
+    assert.equal(call(one, { query: { id: '1.5' } }).statusCode, 500);
   });
 
   test('only GET is allowed', () => {

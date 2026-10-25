@@ -54,6 +54,28 @@ Never put the secret key in code, in the README, or in a chat. It belongs only i
 
 **Copy the whole key.** The Stripe dashboard shows keys shortened, like `pk_test_...JD7i`. That text is not the key. Use the copy button on **Developers → API keys** so you get the full value (about 100 characters). If a key is shortened or the two keys are from different modes, `/api/config` turns Stripe off, the checkout stays in demo mode, and the browser console says which key is wrong. After changing a key in Vercel, redeploy for it to take effect.
 
+## Products API
+
+Read-only endpoints that serve products from the same price list the payment server trusts (`data/prices.json`). They run as Vercel functions alongside the payment API.
+
+The store loads every page of `/api/products` when it opens, and uses those names and prices. A product's other details (department, size, stock, nutrition, allergens) are still built into `index.html`, and a product without a server entry keeps its built-in name and price. If the API is not there (opened as a file, GitHub Pages, the Claude demo) or sends something that is not a product list, the store uses its built-in prices. If a server price is not below a product's old price, the sale badge is hidden.
+
+| Endpoint | File | Returns |
+|----------|------|---------|
+| `GET /api/products?page=1&per_page=10` | `api/products/index.js` | One page of products, plus `page`, `per_page`, `total` and `total_pages` |
+| `GET /api/products/:id` | `api/products/[id].js` | One product as `{ "data": { … } }` |
+
+Each product looks like this:
+
+```json
+{ "id": 1, "name": "Honeycrisp Apples", "price": 2.99, "per": "lb", "sold_by_weight": true }
+```
+
+- `page` defaults to 1 and `per_page` to 10 (maximum 50). Both must be positive whole numbers, or the API answers `400`. A page past the end returns an empty `data` list, not an error.
+- An id that is not a whole number (for example `/api/products/a`) gets a `500` server error. An id with no product gets `404`.
+- Only `GET` is allowed. Other methods get `405`.
+- Responses are cached for 60 seconds (`Cache-Control: public, max-age=60`).
+
 ## Run it
 
 Open `index.html` in a browser. No build step or server needed.
@@ -102,7 +124,7 @@ If Vercel Deployment Protection is on for previews, create a **Protection Bypass
 
 ## Automated tests
 
-Playwright tests cover GP-1 to GP-8, the store picker and Stripe payments: 97 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (226 checks). The payment server has 24 more unit tests.
+Playwright tests cover GP-1 to GP-8, the store picker, Stripe payments and loading products from the API: 165 functional tests and 16 visual tests, each run on desktop Chrome and a Pixel 7 phone size (362 checks). The server has 38 more unit tests: 29 for payments and 9 for the products API.
 
 | File | Story |
 |------|-------|
@@ -114,7 +136,9 @@ Playwright tests cover GP-1 to GP-8, the store picker and Stripe payments: 97 fu
 | `tests/checkout.spec.ts` | GP-6 slots and delivery area, GP-7 payment and declines, GP-8 confirmation, tracking, history, reorder |
 | `tests/stores.spec.ts` | Store picker, per-store stock, cart re-check on store change |
 | `tests/stripe.spec.ts` | Stripe checkout with a stand-in Stripe.js: payment form, success, decline, server errors, price check, weighted-item hold, demo fallback |
+| `tests/products-api.spec.ts` | Store loads names and prices from `/api/products` with a stand-in API: prices on cards and in the cart, sale badge, paging, fallback when the API is down or sends a non-list reply |
 | `api-tests/payments.test.js` | Server pricing and payment endpoints, with a fake Stripe client |
+| `api-tests/products.test.js` | Products API: paging, defaults, bad input, unknown ids, GET only |
 | `tests/accessibility.spec.ts` | Accessibility: every screen scanned with axe-core against WCAG 2.1 AA in light and dark mode, plus keyboard-only shopping, focus handling, announcements and 200% zoom |
 | `tests/visual.spec.ts` | Visual: home (light and dark), filters, product cards, search, product dialog, cart, sign-in, checkout steps, decline, confirmation |
 
@@ -126,7 +150,7 @@ npx playwright install chromium
 npm test
 npm run test:report   # open the HTML report
 npm run lint          # check every test has an assertion
-npm run test:api      # payment server unit tests
+npm run test:api      # payment and products API unit tests
 ```
 
 ### Visual tests
